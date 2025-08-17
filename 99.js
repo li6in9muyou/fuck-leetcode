@@ -12,7 +12,7 @@
  */
 var recoverTree = function (root) {
   const valToNode = new Map();
-  const arr = toArray(root);
+  const arr = bstToArr(root);
 
   const swapped = findSwapped(arr);
   const badNodes = swapped.map((x) => valToNode.get(x));
@@ -26,16 +26,12 @@ var recoverTree = function (root) {
     return arr.filter((x, i) => good[i] !== x);
   }
 
-  function toArray(r) {
+  function bstToArr(r) {
     if (r === null) {
       return [];
     }
 
-    const left = toArray(r.left);
-    const right = toArray(r.right);
-    const ans = [...left, r.val, ...right];
-
     valToNode.set(r.val, r);
-    return ans;
+    return [...bstToArr(r.left), r.val, ...bstToArr(r.right)];
   }
 };
