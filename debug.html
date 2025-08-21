@@ -51,13 +51,20 @@
     </style>
     <script src="./runtime.js"></script>
     <script>
-      const promises = [];
+      const numbersToLoad = [];
       for (let i = 1; i <= 200; i++) {
-        const script = document.createElement("script");
-        const scriptName = `${i}.js`;
-        script.src = scriptName;
+        numbersToLoad.push(i);
+      }
+      for (let i = 1000; i <= 1050; i++) {
+        numbersToLoad.push(i);
+      }
 
-        // Create a promise to track the loading status of this script
+      // Create a promise to track the loading status of this script
+      const promises = [];
+      numbersToLoad.forEach((number) => {
+        const script = document.createElement("script");
+        const scriptName = `${number}.js`;
+        script.src = scriptName;
         const promise = new Promise((resolve) => {
           script.onload = () =>
             resolve({ status: "fulfilled", value: scriptName });
@@ -69,7 +76,7 @@
         });
         promises.push(promise);
         document.head.appendChild(script);
-      }
+      });
 
       // Wait for all scripts to finish attempting to load
       Promise.allSettled(promises).then((results) => {
