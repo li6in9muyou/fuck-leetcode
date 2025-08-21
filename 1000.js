@@ -1,5 +1,3 @@
-let DEBUG_LIMIT = 22;
-
 function YIELD() {
   return new Promise((resolve) => {
     setTimeout(resolve, 0);
@@ -11,8 +9,7 @@ function scheduler(max) {
   const working = new Set();
 
   (async function run() {
-    while (DEBUG_LIMIT-- > 0) {
-      console.log("libq scheduler/loop");
+    while (true) {
       if (taskQueue.length === 0 && working.size === 0) {
         await YIELD();
         continue;
