@@ -44,28 +44,18 @@ function scheduler(max) {
   };
 }
 
-const run = scheduler(3);
-run(() => sleep(5000, 1)).then((x) => console.log("libq run/done", x));
-run(() => sleep(500, 2)).then((x) => console.log("libq run/done", x));
-run(() => sleep(500, 3)).then((x) => console.log("libq run/done", x));
-run(() => sleep(500, 4)).then((x) => console.log("libq run/done", x));
-run(() => sleep(500, 5)).then((x) => console.log("libq run/done", x));
-run(() => sleep(500, 6)).then((x) => console.log("libq run/done", x));
-run(() => sleep(500, 7)).then((x) => console.log("libq run/done", x));
-run(() => sleep(500, 8)).then((x) => console.log("libq run/done", x));
-run(() => sleep(500, 9)).then((x) => console.log("libq run/done", x));
-run(() => sleep(500, 10)).then((x) => console.log("libq run/done", x));
-run(() => sleep(500, 11)).then((x) => console.log("libq run/done", x));
-run(() => sleep(500, 12)).then((x) => console.log("libq run/done", x));
-run(() => sleep(500, 13)).then((x) => console.log("libq run/done", x));
-run(() => sleep(500, 14)).then((x) => console.log("libq run/done", x));
-
-function sleep(ms, ans) {
-  return new Promise((resolve) => {
-    console.log("libq scheduler/start", ans);
-    setTimeout(() => {
-      console.log("libq scheduler/end", ans);
-      resolve(ans);
-    }, ms);
-  });
-}
+// const run = scheduler(3);
+// run(() => sleep(5000)).then(() => console.log("libq run/done", 1));
+// run(() => sleep(500).then(() => console.log("libq run/done", 2)));
+// run(() => sleep(500).then(() => console.log("libq run/done", 3)));
+// run(() => sleep(500).then(() => console.log("libq run/done", 4)));
+// run(() => sleep(500).then(() => console.log("libq run/done", 5)));
+// run(() => sleep(500).then(() => console.log("libq run/done", 6)));
+// run(() => sleep(500).then(() => console.log("libq run/done", 7)));
+// run(() => sleep(500).then(() => console.log("libq run/done", 8)));
+// run(() => sleep(500).then(() => console.log("libq run/done", 9)));
+// run(() => sleep(500).then(() => console.log("libq run/done", 10)));
+// run(() => sleep(500).then(() => console.log("libq run/done", 11)));
+// run(() => sleep(500).then(() => console.log("libq run/done", 12)));
+// run(() => sleep(500).then(() => console.log("libq run/done", 13)));
+// run(() => sleep(500).then(() => console.log("libq run/done", 14)));
