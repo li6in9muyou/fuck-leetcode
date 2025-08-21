@@ -1,31 +1,29 @@
+let DEBUG_LIMIT = 7;
+
 function scheduler(max) {
-  const workQ = [];
+  let workQ = [];
   const taskQ = [];
-  let nextBatch;
 
-  (async function () {
-    while (true) {
-      if (workQ.length === 0) {
-        nextBatch = taskQ.slice(0, max);
-      } else {
-        console.log("libq scheduler/racebegin", workQ);
-        const [ans, onComplete, getTask] = await Promise.race(
-          workQ.map((fn) => fn()),
-        );
-        console.log("libq scheduler/racedone", ans, onComplete, promise);
+  const loop = async function () {
+    --DEBUG_LIMIT > 0 && setTimeout(loop, 0);
 
-        const remaining = taskQ.filter((q) => q !== getTask);
-        nextBatch = workQ.slice(0, max - remaining.length);
-
-        onComplete(ans);
-      }
-
-      workQ.push(...nextBatch);
-      for (let i = 0; i < nextBatch.length; i++) {
-        taskQ.shift();
-      }
+    while (workQ.length < max) {
+      workQ.push(taskQ.unshift());
     }
-  })();
+
+    console.log("libq scheduler/racebegin", workQ, taskQ);
+    const [ans, onComplete, getTask] = await Promise.race(
+      workQ.map((fn) => fn()),
+    );
+    console.log("libq scheduler/racedone", ans, onComplete, promise);
+
+    onComplete(ans);
+
+    const remaining = taskQ.filter((q) => q.getTask !== getTask);
+    workQ = remaining.concat(workQ);
+  };
+
+  loop();
 
   return function (getTask) {
     taskQ.push(getTask);
@@ -33,8 +31,6 @@ function scheduler(max) {
     let _r;
     const p = new Promise((r) => (_r = r));
     p.then((ans) => [ans, _r, getTask]);
-
-    taskQ.push(p);
 
     return p;
   };
