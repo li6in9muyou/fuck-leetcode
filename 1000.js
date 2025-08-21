@@ -1,43 +1,35 @@
-let DEBUG_LIMIT = 7;
-
 function scheduler(max) {
-  let workQ = [];
-  const taskQ = [];
+  const taskQueue = [];
+  const runningPromises = new Set();
+  let resolveCurrentRun = null;
 
-  const loop = async function () {
-    --DEBUG_LIMIT > 0 && setTimeout(loop, 0);
-
-    if (workQ.length === max) {
-      return;
+  (async function run() {
+    while (true) {
+      if (runningPromises.size < max && taskQueue.length > 0) {
+        const { task, resolve } = taskQueue.shift();
+        const promise = task();
+        runningPromises.add(promise);
+        promise.finally(() => {
+          runningPromises.delete(promise);
+          if (resolveCurrentRun) {
+            resolveCurrentRun();
+          }
+        });
+        resolve(promise);
+      } else {
+        await new Promise((r) => (resolveCurrentRun = r));
+      }
     }
+  })();
 
-    while (workQ.length < max && taskQ.length > 0) {
-      workQ.push(taskQ.shift());
-    }
-
-    console.log("libq scheduler/racebegin", workQ, taskQ);
-    const done = await Promise.race(
-      workQ.map(([fn, onComplete]) =>
-        fn().then((ans) => [ans, onComplete, fn]),
-      ),
-    );
-    console.log("libq scheduler/racedone", done);
-
-    const [ans, onComplete, getTask] = done;
-
-    onComplete(ans);
-
-    const remaining = taskQ.filter((q) => q !== getTask);
-    workQ = remaining.concat(workQ);
-  };
-
-  loop();
-
-  return function (getTask) {
-    let _r;
-    const p = new Promise((r) => (_r = r));
-    taskQ.push([getTask, _r]);
-    return p;
+  return function (task) {
+    return new Promise((resolve) => {
+      taskQueue.push({ task, resolve });
+      if (resolveCurrentRun) {
+        resolveCurrentRun();
+        resolveCurrentRun = null;
+      }
+    });
   };
 }
 
