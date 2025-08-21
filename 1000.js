@@ -36,16 +36,16 @@ function scheduler(max) {
 }
 
 const run = scheduler(2);
-run(sleep(3000, 1));
-run(sleep(2000, 2));
-run(sleep(2000, 3));
-run(sleep(2000, 4));
-run(sleep(2000, 5));
-run(sleep(2000, 6));
-run(sleep(2000, 7));
-run(sleep(2000, 8));
-run(sleep(2000, 9));
-run(sleep(2000, 10));
+run(() => sleep(3000, 1));
+run(() => sleep(2000, 2));
+run(() => sleep(2000, 3));
+run(() => sleep(2000, 4));
+run(() => sleep(2000, 5));
+run(() => sleep(2000, 6));
+run(() => sleep(2000, 7));
+run(() => sleep(2000, 8));
+run(() => sleep(2000, 9));
+run(() => sleep(2000, 10));
 
 function sleep(ms, ans) {
   return new Promise((resolve) => {
