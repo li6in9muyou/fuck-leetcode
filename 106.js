@@ -19,12 +19,11 @@ var buildTree = function (inorder, postorder) {
       return null;
     }
 
-    const I = post.length - 1;
-    const me = post[I];
+    const me = post[mid.length - 1];
     const meIdx = mid.indexOf(me);
 
     const leftCnt = meIdx;
-    const rightCnt = I - leftCnt;
+    const rightCnt = mid.length - leftCnt - 1;
 
     const left = descend(mid.slice(0, leftCnt), post.slice(0, leftCnt));
     const right = descend(

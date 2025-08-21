@@ -15,15 +15,17 @@ var buildTree = function (preorder, inorder) {
   return descend(preorder, inorder);
 
   function descend(pre, mid) {
-    if (mid.length === 0) {
+    if (mid.length === 0 || pre.length === 0) {
       return null;
     }
 
     const me = pre[0];
     const meIdxInMid = mid.indexOf(me);
 
-    const left = descend(pre.slice(1), mid.slice(0, meIdxInMid));
-    const right = descend(pre.slice(meIdxInMid + 1), mid.slice(meIdxInMid + 1));
+    const leftCnt = meIdxInMid;
+
+    const left = descend(pre.slice(1, 1 + leftCnt), mid.slice(0, leftCnt));
+    const right = descend(pre.slice(leftCnt + 1), mid.slice(leftCnt + 1));
 
     const meNode = new TreeNode(me);
     meNode.left = left;
