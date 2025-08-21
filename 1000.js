@@ -1,23 +1,38 @@
+let DEBUG_LIMIT = 22;
+
+function YIELD() {
+  return new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
+}
+
 function scheduler(max) {
   const taskQueue = [];
-  const runningPromises = new Set();
-  let resolveCurrentRun = null;
+  const working = new Set();
 
   (async function run() {
-    while (true) {
-      if (runningPromises.size < max && taskQueue.length > 0) {
+    while (DEBUG_LIMIT-- > 0) {
+      console.log("libq scheduler/loop");
+      if (taskQueue.length === 0 && working.size === 0) {
+        await YIELD();
+        continue;
+      }
+
+      while (working.size < max && taskQueue.length > 0) {
         const { task, resolve } = taskQueue.shift();
-        const promise = task();
-        runningPromises.add(promise);
-        promise.finally(() => {
-          runningPromises.delete(promise);
-          if (resolveCurrentRun) {
-            resolveCurrentRun();
-          }
+
+        const w = { resolve };
+        w.promise = task().then((ans) => {
+          w.ans = ans;
+          return w;
         });
-        resolve(promise);
-      } else {
-        await new Promise((r) => (resolveCurrentRun = r));
+        working.add(w.promise);
+      }
+      if (working.size > 0) {
+        const done = await Promise.race(working);
+        working.delete(done.promise);
+        const { ans, resolve } = done;
+        resolve(ans);
       }
     }
   })();
@@ -25,25 +40,22 @@ function scheduler(max) {
   return function (task) {
     return new Promise((resolve) => {
       taskQueue.push({ task, resolve });
-      if (resolveCurrentRun) {
-        resolveCurrentRun();
-        resolveCurrentRun = null;
-      }
+      console.log("libq scheduler/enqueue", taskQueue);
     });
   };
 }
 
-const run = scheduler(2);
-run(() => sleep(2000, 1));
-run(() => sleep(100, 2));
-run(() => sleep(100, 3));
-run(() => sleep(100, 4));
-run(() => sleep(100, 5));
-run(() => sleep(100, 6));
-run(() => sleep(100, 7));
-run(() => sleep(100, 8));
-run(() => sleep(100, 9));
-run(() => sleep(100, 10));
+const run = scheduler(3);
+run(() => sleep(2000, 1)).then((x) => console.log("libq run/done", x));
+run(() => sleep(500, 2)).then((x) => console.log("libq run/done", x));;
+run(() => sleep(500, 3)).then((x) => console.log("libq run/done", x));;
+run(() => sleep(500, 4)).then((x) => console.log("libq run/done", x));;
+run(() => sleep(500, 5)).then((x) => console.log("libq run/done", x));;
+run(() => sleep(500, 6)).then((x) => console.log("libq run/done", x));;
+run(() => sleep(500, 7)).then((x) => console.log("libq run/done", x));;
+run(() => sleep(500, 8)).then((x) => console.log("libq run/done", x));;
+run(() => sleep(500, 9)).then((x) => console.log("libq run/done", x));;
+run(() => sleep(500, 10)).then((x) => console.log("libq run/done", x));;
 
 function sleep(ms, ans) {
   return new Promise((resolve) => {
