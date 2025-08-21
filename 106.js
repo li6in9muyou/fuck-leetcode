@@ -24,12 +24,12 @@ var buildTree = function (inorder, postorder) {
     const meIdx = mid.indexOf(me);
 
     const leftCnt = meIdx;
-    const rightCnt = I + 1 - meIdx;
+    const rightCnt = I - leftCnt;
 
     const left = descend(mid.slice(0, leftCnt), post.slice(0, leftCnt));
     const right = descend(
       mid.slice(meIdx + 1),
-      post.slice(leftCnt + 1, leftCnt + rightCnt),
+      post.slice(leftCnt, leftCnt + rightCnt),
     );
 
     const meNode = new TreeNode(me);
