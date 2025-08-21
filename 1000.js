@@ -1,33 +1,38 @@
 function scheduler(max) {
   const workQ = [];
   const taskQ = [];
+  let nextBatch;
 
-  (async () => {
+  (async function () {
     while (true) {
-      const [ans, onComplete, promise] = await Promise.race(workQ);
-      console.log("libq scheduler/racedone", ans, onComplete, promise);
+      if (workQ.length === 0) {
+        nextBatch = taskQ.slice(0, max);
+      } else {
+        console.log("libq scheduler/racebegin", workQ);
+        const [ans, onComplete, getTask] = await Promise.race(
+          workQ.map((fn) => fn()),
+        );
+        console.log("libq scheduler/racedone", ans, onComplete, promise);
 
-      const remaining = taskQ.filter((q) => q !== promise);
-      const nextBatch = workQ.slice(0, max - remaining.length);
+        const remaining = taskQ.filter((q) => q !== getTask);
+        nextBatch = workQ.slice(0, max - remaining.length);
+
+        onComplete(ans);
+      }
 
       workQ.push(...nextBatch);
-
       for (let i = 0; i < nextBatch.length; i++) {
         taskQ.shift();
       }
-
-      onComplete(ans);
-
-      yield;
     }
   })();
 
-  return function (task) {
-    taskQ.push(task);
+  return function (getTask) {
+    taskQ.push(getTask);
 
     let _r;
     const p = new Promise((r) => (_r = r));
-    p.then((ans) => [ans, _r, p]);
+    p.then((ans) => [ans, _r, getTask]);
 
     taskQ.push(p);
 
