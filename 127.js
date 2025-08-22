@@ -11,49 +11,45 @@ var ladderLength = function (beginWord, endWord, wordList) {
 
   const adjList = new Map();
 
-  wordList.forEach(addWord);
   addWord(beginWord);
-
-  const q = [];
-  q.push(beginWord);
-
-  const dis = new Map();
-  for (const node of adjList.keys()) {
-    dis.set(node, Number.MAX_SAFE_INTEGER);
+  for (const voca of wordList) {
+    addWord(voca);
   }
-  dis.set(beginWord, 0);
 
+  let dist = 1;
+  const seen = new Set([beginWord]);
+  let q = [beginWord];
   while (q.length > 0) {
-    const me = q.shift();
+    const nextQ = [];
 
-    if (me === endWord) {
-      return Math.floor(dis.get(me) / 2) + 1;
-    }
+    for (const me of q) {
+      if (me === endWord) {
+        return Math.floor(dist / 2) + 1;
+      }
 
-    for (const ngb of adjList.get(me)) {
-      if (dis.get(ngb) === Number.MAX_SAFE_INTEGER) {
-        dis.set(ngb, dis.get(me) + 1);
-        q.push(ngb);
+      const ngbs = adjList.get(me) ?? [];
+      for (const ngb of ngbs) {
+        if (!seen.has(ngb)) {
+          seen.add(ngb);
+          nextQ.push(ngb);
+        }
       }
     }
+
+    q = nextQ;
+    dist++;
   }
 
   return 0;
 
   function addWord(word) {
-    if (!adjList.has(word)) {
-      adjList.set(word, []);
-    }
-
-    const me = adjList.get(word);
+    const vNodes = [];
     for (let i = 0; i < word.length; i++) {
-      const ngb = `${word.slice(0, i)}*${word.slice(i + 1)}`;
-      if (!adjList.has(ngb)) {
-        adjList.set(ngb, []);
-      }
-
-      me.push(ngb);
-      adjList.get(ngb).push(word);
+      vNodes.push(`${word.slice(0, i)}*${word.slice(i + 1)}`);
+    }
+    adjList.set(word, [...(adjList.get(word) ?? []), ...vNodes]);
+    for (const vNode of vNodes) {
+      adjList.set(vNode, [...(adjList.get(vNode) ?? []), word]);
     }
   }
 };
