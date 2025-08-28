@@ -10,8 +10,9 @@ function scheduler(max) {
 
   (async function run() {
     while (true) {
+      await YIELD();
+
       if (taskQueue.length === 0 && working.size === 0) {
-        await YIELD();
         continue;
       }
 
