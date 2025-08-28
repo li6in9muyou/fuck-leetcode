@@ -1,66 +1,66 @@
 const input = {
-    a: {
-        b: {
-            c: 1,
-            d: true,
-            e: null,
-        },
+  a: {
+    b: {
+      c: 1,
+      d: true,
+      e: null,
     },
-    f: {
-        g: '3',
-        h: '4',
-        i: '5',
+  },
+  f: {
+    g: "3",
+    h: "4",
+    i: "5",
+  },
+  j: [
+    4,
+    5,
+    {
+      x: 7,
+      y: 8,
     },
-    j: [
-        4,
-        5,
-        {
-            x: 7,
-            y: 8,
-        },
-    ],
-}
+  ],
+};
 
 function flatten(obj) {
-    const ans = {};
-    dfs(obj, [], ans)
+  const ans = {};
+  dfs(obj, [], ans);
 
-    const replaced = {}
-    for (let [k, v] of Object.entries(ans)) {
-        k = k.replace(/.(\d+)/, (_, idx) => {
-            return `[${idx}]`
-        })
-        replaced[k] = v
+  const replaced = {};
+  for (let [k, v] of Object.entries(ans)) {
+    k = k.replace(/.(\d+)/, (_, idx) => {
+      return `[${idx}]`;
+    });
+    replaced[k] = v;
+  }
+  return replaced;
+
+  function dfs(root, currPath, ans) {
+    if (root === null) {
+      ans[currPath.join(".")] = root;
     }
-    return replaced;
 
-    function dfs(root, currPath, ans) {
-        if (root === null) {
-            ans[currPath.join('.')] = root;
+    switch (Object.prototype.toString.call(root)) {
+      case "[object Array]":
+      case "[object Object]": {
+        if (Object.keys(root).length === 0) {
+          // do nothing
+        } else {
+          for (const k in root) {
+            currPath.push(k);
+            dfs(root[k], currPath, ans);
+            currPath.pop();
+          }
         }
-
-        switch (Object.prototype.toString.call(root)) {
-            case '[object Array]':
-            case '[object Object]': {
-                if (Object.keys(root).length === 0) {
-                    // do nothing
-                } else {
-                    for (const k in root) {
-                        currPath.push(k);
-                        dfs(root[k], currPath, ans);
-                        currPath.pop();
-                    }
-                }
-                break;
-            }
-            case '[object Boolean]':
-            case '[object Number]':
-                ans[currPath.join('.')] = root;
-                return;
-            default:
-                throw `unknown type ${typeof root} ${root}`;
-        }
+        break;
+      }
+      case "[object Boolean]":
+      case "[object Number]":
+        ans[currPath.join(".")] = root;
+        return;
+      default:
+        throw `unknown type ${typeof root} ${root}`;
     }
+  }
 }
 
 // console.log(flatten({}))
