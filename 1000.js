@@ -29,6 +29,7 @@ function scheduler(max) {
 
         working.add(w.promise);
       }
+
       if (working.size > 0) {
         const { ans, onComplete, promise } = await Promise.race(working);
         working.delete(promise);
@@ -40,7 +41,6 @@ function scheduler(max) {
   return function (getPromise) {
     return new Promise((resolve) => {
       taskQueue.push({ getPromise, onComplete: resolve });
-      console.log("libq scheduler/enqueue", taskQueue);
     });
   };
 }
