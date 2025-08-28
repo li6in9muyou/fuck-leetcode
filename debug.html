@@ -9,7 +9,7 @@
         font-family: sans-serif;
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: start;
         align-items: center;
         min-height: 98vh;
         text-align: center;
@@ -26,12 +26,10 @@
       }
       #loaded-files-container {
         margin-top: 20px;
+        width: 100%;
         text-align: left;
-        overflow-y: auto;
-        border: 1px solid #444;
-        padding: 10px;
-        background-color: #1e1e1e;
-        border-radius: 8px;
+        padding: 12px 16px;
+        box-sizing: border-box;
       }
       #loaded-files-container h2 {
         margin-top: 0;
@@ -40,17 +38,24 @@
       #loaded-files-list {
         list-style-type: none;
         padding: 0;
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 12px;
       }
       #loaded-files-list li {
-        padding: 5px 0;
-        border-bottom: 1px dashed #333;
+        background-color: #1b1b1b;
+        border: 1px solid #2a2a2a;
+        color: #e0e0e0;
+        padding: 10px 12px;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 0.95rem;
+        word-break: break-word;
       }
       #loaded-files-list li:hover {
-        background: #0f0;
-        color: #00f;
-      }
-      #loaded-files-list li:last-child {
-        border-bottom: none;
+        border-color: #3a3a3a;
+        background-color: #202020;
       }
     </style>
     <script src="./runtime.js"></script>
