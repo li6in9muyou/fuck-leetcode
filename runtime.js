@@ -9,3 +9,7 @@ function sleep(ms) {
     setTimeout(resolve, ms);
   });
 }
+
+function print2d(arr) {
+  return arr.map((row) => row.join("\t")).join("\n");
+}
