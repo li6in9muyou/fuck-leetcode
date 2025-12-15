@@ -786,6 +786,36 @@ function simThree(runner, discardStrategy) {
     return ans;
   }, discardStrategy.discard);
 
+  runner((d) => {
+    let ans = [...d];
+    ans = ans.filter((c) => !(c.rank === R.vi && c.suit === S.Heart));
+    ans.push({ rank: R.vii, suit: S.Heart });
+    ans.push({ rank: R.vii, suit: S.Heart });
+    console.log("one 6 removed, two 7s added");
+    printDeckBreakdownTable(ans);
+    return ans;
+  }, discardStrategy.discard);
+
+  runner((d) => {
+    let ans = [...d];
+    ans = ans.filter((c) => !(c.rank === "6" && c.suit === S.Heart));
+    ans = ans.filter((c) => !(c.rank === "6" && c.suit === S.Club));
+    ans.push({ rank: R.vii, suit: S.Heart });
+    console.log("two 6s removed, one 7 added");
+    printDeckBreakdownTable(ans);
+    return ans;
+  }, discardStrategy.discard);
+
+  runner((d) => {
+    let ans = [...d];
+    ans.push({ rank: R.vii, suit: S.Heart });
+    ans = ans.filter((c) => !(c.rank === "5" && c.suit === S.Heart));
+    ans = ans.filter((c) => !(c.rank === "6" && c.suit === S.Heart));
+    console.log("one 7 added, one 5 removed, one 6 removed");
+    printDeckBreakdownTable(ans);
+    return ans;
+  }, discardStrategy.discard);
+
   console.log("%c3oak ends", "color:#0f0;font-size:2rem");
 }
 
