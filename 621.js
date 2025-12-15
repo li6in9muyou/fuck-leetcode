@@ -113,36 +113,39 @@ const simMany = (
     totalSim: 3e4,
   },
 ) => {
-  const deck = shuffleDeck(prepareDeckBeforeShuffle([...STANDARD_DECK]));
-  const results = Array.from({ length: simConfig.totalSim })
-    .map(() => simulateOne(deck, isOk, howToDiscard, gameConfig))
-    .reduce((groupby, row) => {
-      const du = row.numDiscardUsed;
-      if (groupby[du] === undefined) {
-        groupby[du] = {
-          discard: du,
-          success: 0,
-        };
-      }
+  const deck = prepareDeckBeforeShuffle([...STANDARD_DECK]);
+  const results = Array.from({ length: simConfig.totalSim }).map(() => {
+    const shuffled = shuffleDeck(deck);
+    return simulateOne(shuffled, isOk, howToDiscard, gameConfig);
+  });
 
-      const g = groupby[du];
-      row.success && (g.success += 1);
-      g.successRate = (g.success / simConfig.totalSim) * 100;
-      return groupby;
-    }, {});
-
-  for (let i = 0; i < Object.keys(results).length; i++) {
-    if (i === 0) {
-      results[i].cumulativeSuccessRate = results[i].successRate;
-    } else {
-      results[i].cumulativeSuccessRate =
-        results[i - 1].cumulativeSuccessRate + results[i].successRate;
+  const stats = results.reduce((groupby, row) => {
+    const du = row.numDiscardUsed;
+    if (groupby[du] === undefined) {
+      groupby[du] = {
+        discard: du,
+        success: 0,
+        successRate: 0,
+      };
     }
-    results[i].failRate = +(100 - results[i].cumulativeSuccessRate).toFixed(2);
-    results[i].cumulativeSuccessRate =
-      +results[i].cumulativeSuccessRate.toFixed(2);
+
+    const g = groupby[du];
+    row.success && (g.success += 1);
+    g.successRate = (g.success / simConfig.totalSim) * 100;
+    return groupby;
+  }, {});
+  for (let i = 0; i < Object.keys(stats).length; i++) {
+    if (i === 0) {
+      stats[i].cumulativeSuccessRate = stats[i].successRate;
+    } else {
+      stats[i].cumulativeSuccessRate =
+        stats[i - 1].cumulativeSuccessRate + stats[i].successRate;
+    }
+    stats[i].failRate = +(100 - stats[i].cumulativeSuccessRate).toFixed(2);
+    stats[i].cumulativeSuccessRate = +stats[i].cumulativeSuccessRate.toFixed(2);
   }
-  console.table(results, ["cumulativeSuccessRate", "failRate"]);
+
+  console.table(stats, ["cumulativeSuccessRate", "failRate"]);
 };
 
 const simFlush = (prepareDeck) =>
