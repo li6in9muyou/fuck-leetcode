@@ -70,16 +70,9 @@ const discardToFindFlush = (hand, maxCardsPerDiscard = 5) => {
 
 const repeat = (n, what) => Array.from({ length: n }).fill(what);
 
-const simulateOne = ({
-  deck,
-  isOk,
-  howToDiscard,
-  handSize = 8,
-  maxNumDiscards = 3,
-  maxCardsPerDiscard = 5,
-}) => {
-  let hand = deck.slice(0, handSize);
-  let d = deck.slice(handSize);
+const simulateOne = (deck, isOk, howToDiscard, gameConfig) => {
+  let hand = deck.slice(0, gameConfig.handSize);
+  let d = deck.slice(gameConfig.handSize);
   let numDiscardUsed = 0;
   const handHistory = [hand];
 
@@ -87,14 +80,14 @@ const simulateOne = ({
     if (isOk(hand)) {
       break;
     }
-    if (numDiscardUsed >= maxNumDiscards) {
+    if (numDiscardUsed >= gameConfig.maxNumDiscards) {
       break;
     }
     if (d.length === 0) {
       break;
     }
 
-    const { keep, discard } = howToDiscard(hand, maxCardsPerDiscard);
+    const { keep, discard } = howToDiscard(hand, gameConfig.maxCardsPerDiscard);
 
     const drawCount = discard.length;
     const redrawCards = d.slice(0, drawCount);
@@ -108,18 +101,21 @@ const simulateOne = ({
   return { success: isOk(hand), numDiscardUsed, handHistory };
 };
 
-const simFlush = (prepareDeck) => {
-  const TOTAL_SIM = 3e4;
-  const d = prepareDeck([...STANDARD_DECK]);
-  const results = Array.from({ length: TOTAL_SIM })
-    .map(() => {
-      return simulateOne({
-        deck: shuffleDeck(d),
-        isOk: isFlush,
-        howToDiscard: discardToFindFlush,
-        maxNumDiscards: 3,
-      });
-    })
+const simMany = (
+  prepareDeckBeforeShuffle,
+  isOk,
+  howToDiscard,
+  gameConfig = {
+    maxNumDiscards: 3,
+    handSize: 8,
+  },
+  simConfig = {
+    totalSim: 3e4,
+  },
+) => {
+  const deck = shuffleDeck(prepareDeckBeforeShuffle([...STANDARD_DECK]));
+  const results = Array.from({ length: simConfig.totalSim })
+    .map(() => simulateOne(deck, isOk, howToDiscard, gameConfig))
     .reduce((groupby, row) => {
       const du = row.numDiscardUsed;
       if (groupby[du] === undefined) {
@@ -131,7 +127,7 @@ const simFlush = (prepareDeck) => {
 
       const g = groupby[du];
       row.success && (g.success += 1);
-      g.successRate = (g.success / TOTAL_SIM) * 100;
+      g.successRate = (g.success / simConfig.totalSim) * 100;
       return groupby;
     }, {});
 
@@ -148,6 +144,9 @@ const simFlush = (prepareDeck) => {
   }
   console.table(results, ["cumulativeSuccessRate", "failRate"]);
 };
+
+const simFlush = (prepareDeck) =>
+  simMany(prepareDeck, isFlush, discardToFindFlush);
 
 simFlush((d) => {
   console.log("libq 5 flush, standard", d);
