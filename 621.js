@@ -28,8 +28,6 @@ const shuffleDeck = (array) => {
   return shuffled;
 };
 
-// console.log("libq shuffled", shuffleDeck(createStandardDeck()));
-
 const isFlush = (hand, flushRequirement = 5) => {
   const suitCounts = hand.reduce((acc, card) => {
     const count = acc[card.suit] || 0;
@@ -72,88 +70,6 @@ const discardToFindFlush = (hand, maxCardsPerDiscard = 5) => {
 
 const repeat = (n, what) => Array.from({ length: n }).fill(what);
 
-// console.log(
-//   "libq findflush/62/discard",
-//   discardToFindFlush([
-//     ...repeat(2, {
-//       suit: "s",
-//       rank: 1111,
-//     }),
-//     ...repeat(6, {
-//       suit: "d",
-//       rank: 1111,
-//     }),
-//   ]).discard,
-// );
-//
-// console.log(
-//   "libq findflush/53/discard",
-//   discardToFindFlush([
-//     ...repeat(3, {
-//       suit: "s",
-//       rank: 1111,
-//     }),
-//     ...repeat(5, {
-//       suit: "d",
-//       rank: 1111,
-//     }),
-//   ]).discard,
-// );
-//
-// console.log(
-//   "libq findflush/44/discard",
-//   discardToFindFlush([
-//     ...repeat(4, {
-//       suit: "s",
-//       rank: 1111,
-//     }),
-//     ...repeat(4, {
-//       suit: "d",
-//       rank: 1111,
-//     }),
-//   ]).discard,
-// );
-//
-// console.log(
-//   "libq findflush/332/discard",
-//   discardToFindFlush([
-//     ...repeat(3, {
-//       suit: "s",
-//       rank: 1111,
-//     }),
-//     ...repeat(3, {
-//       suit: "d",
-//       rank: 1111,
-//     }),
-//     ...repeat(2, {
-//       suit: "h",
-//       rank: 1111,
-//     }),
-//   ]).discard,
-// );
-//
-// console.log(
-//   "libq findflush/2222/discard",
-//   discardToFindFlush([
-//     ...repeat(2, {
-//       suit: "s",
-//       rank: 1111,
-//     }),
-//     ...repeat(2, {
-//       suit: "d",
-//       rank: 1111,
-//     }),
-//     ...repeat(2, {
-//       suit: "h",
-//       rank: 1111,
-//     }),
-//     ...repeat(2, {
-//       suit: "c",
-//       rank: 1111,
-//     }),
-//   ]).discard,
-// );
-
 const simulateOne = ({
   deck,
   isOk,
@@ -191,51 +107,6 @@ const simulateOne = ({
 
   return { success: isOk(hand), numDiscardUsed, handHistory };
 };
-
-// console.log(
-//   "libq simulate/8",
-//   simulateOne({
-//     deck: [...repeat(8, { suit: "s", rank: 99 })],
-//     isOk: isFlush,
-//     howToDiscard: discardToFindFlush,
-//   }),
-// );
-//
-// console.log(
-//   "libq simulate/441",
-//   simulateOne({
-//     deck: [
-//       ...repeat(4, { suit: "s", rank: 99 }),
-//       ...repeat(4, { suit: "d", rank: 99 }),
-//       ...repeat(1, { suit: "s", rank: 99 }),
-//     ],
-//     isOk: isFlush,
-//     howToDiscard: discardToFindFlush,
-//   }),
-// );
-//
-// console.log(
-//   "libq simulate/41",
-//   simulateOne({
-//     deck: [
-//       ...repeat(4, { suit: "s", rank: 99 }),
-//       ...repeat(1, { suit: "d", rank: 99 }),
-//     ],
-//     isOk: isFlush,
-//     howToDiscard: discardToFindFlush,
-//   }),
-// );
-//
-// console.log(
-//   "libq simulatemany",
-//   Array.from({ length: 1000 }).map(() => {
-//     return simulateOne({
-//       deck: shuffleDeck(STANDARD_DECK),
-//       isOk: isFlush,
-//       howToDiscard: discardToFindFlush,
-//     });
-//   }),
-// );
 
 const simFlush = (prepareDeck) => {
   const TOTAL_SIM = 3e4;
