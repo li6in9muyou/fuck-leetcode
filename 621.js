@@ -4,7 +4,19 @@ const S = {
   Diamond: "Diamond",
   Spade: "Spade",
 };
-const R = { vii: "7", i: "A", ii: "2", iii: "3", iv: "4", v: "5" };
+const R = {
+  q: "Q",
+  j: "J",
+  k: "K",
+  x: "10",
+  ix: "9",
+  vii: "7",
+  i: "A",
+  ii: "2",
+  iii: "3",
+  iv: "4",
+  v: "5",
+};
 const SUITS = ["Club", "Diamond", "Heart", "Spade"];
 const RANKS = [
   "2",
@@ -353,6 +365,37 @@ simThree((d) => {
   const ans = [...d];
   ans.push(...repeat(10, { rank: R.vii, suit: S.Heart }));
   console.log("10 additional 7 of hearts are added");
+  printDeckBreakdownTable(ans);
+  return ans;
+});
+simThree((d) => {
+  let ans = [...d];
+  ans.push({ rank: R.i, suit: S.Heart });
+  ans.push({ rank: R.ii, suit: S.Heart });
+  ans.push({ rank: R.iii, suit: S.Heart });
+  ans.push({ rank: R.iv, suit: S.Heart });
+  ans.push({ rank: R.v, suit: S.Heart });
+  ans = ans.filter((c) => !(c.suit === S.Heart && c.rank === R.ix));
+  ans = ans.filter((c) => !(c.suit === S.Heart && c.rank === R.x));
+  ans = ans.filter((c) => !(c.suit === S.Heart && c.rank === R.j));
+  ans = ans.filter((c) => !(c.suit === S.Heart && c.rank === R.q));
+  ans = ans.filter((c) => !(c.suit === S.Heart && c.rank === R.k));
+  console.log("each of A2345 is added and each of 910JQK is removed");
+  printDeckBreakdownTable(ans);
+  return ans;
+});
+simThree((d) => {
+  const ans = [...d];
+  ans.push({ rank: R.j, suit: S.Heart });
+  ans.push({ rank: R.q, suit: S.Heart });
+  ans.push({ rank: R.k, suit: S.Heart });
+  ans.push({ rank: R.j, suit: S.Heart });
+  ans.push({ rank: R.q, suit: S.Heart });
+  ans.push({ rank: R.k, suit: S.Heart });
+  ans.push({ rank: R.j, suit: S.Heart });
+  ans.push({ rank: R.q, suit: S.Heart });
+  ans.push({ rank: R.k, suit: S.Heart });
+  console.log("each of JQK is added 3 times");
   printDeckBreakdownTable(ans);
   return ans;
 });
