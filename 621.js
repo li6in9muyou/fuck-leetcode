@@ -174,12 +174,14 @@ simFlush((d) => {
   ans.find((c) => c.suit === "Heart").suit = "Spade";
   ans.find((c) => c.suit === "Heart").suit = "Spade";
   ans.find((c) => c.suit === "Heart").suit = "Spade";
-  console.log("5 heart becomes spade", ans);
+  console.log("5 heart becomes spade");
+  printDeckBreakdownTable(ans);
   return ans;
 });
 simFlush((d) => {
   const ans = d.slice(10);
-  console.log("10 cards of same suit removed", ans);
+  console.log("10 cards of same suit removed");
+  printDeckBreakdownTable(ans);
   return ans;
 });
 function randomlyDiscard(hand, maxCardsPerDiscard = 5) {
@@ -200,12 +202,14 @@ simFlush((d) => {
   ans.find((c) => c.suit === "Heart").suit = "Spade";
   ans.find((c) => c.suit === "Heart").suit = "Spade";
   ans.find((c) => c.suit === "Heart").suit = "Spade";
-  console.log("5 heart becomes spade, discard randomly", ans);
+  console.log("5 heart becomes spade, discard randomly");
+  printDeckBreakdownTable(ans);
   return ans;
 }, randomlyDiscard);
 simFlush((d) => {
   const ans = d.slice(10);
-  console.log("10 cards of same suit removed, discard randomly", ans);
+  console.log("10 cards of same suit removed, discard randomly");
+  printDeckBreakdownTable(ans);
   return ans;
 }, randomlyDiscard);
 console.log("%cflush ends", "color:#0f0;font-size:2rem");
@@ -243,13 +247,15 @@ simPair((d) => {
 simPair((d) => {
   const ans = [...d];
   ans.push(...repeat(5, { rank: R.vii, suit: S.Heart }));
-  console.log("5 additional 7 of hearts are added", ans);
+  console.log("5 additional 7 of hearts are added");
+  printDeckBreakdownTable(ans);
   return ans;
 });
 simPair((d) => {
   const ans = [...d];
   ans.push(...repeat(10, { rank: R.vii, suit: S.Heart }));
-  console.log("10 additional 7 of hearts are added", ans);
+  console.log("10 additional 7 of hearts are added");
+  printDeckBreakdownTable(ans);
   return ans;
 });
 simPair((d) => {
@@ -259,7 +265,8 @@ simPair((d) => {
   ans.push({ rank: R.iii, suit: S.Heart });
   ans.push({ rank: R.iv, suit: S.Heart });
   ans.push({ rank: R.v, suit: S.Heart });
-  console.log("each of A2345 is added", ans);
+  console.log("each of A2345 is added");
+  printDeckBreakdownTable(ans);
   return ans;
 });
 simPair((d) => {
@@ -274,7 +281,8 @@ simPair((d) => {
   ans.push({ rank: R.iii, suit: S.Heart });
   ans.push({ rank: R.iv, suit: S.Heart });
   ans.push({ rank: R.v, suit: S.Heart });
-  console.log("each of A2345 is added twice", ans);
+  console.log("each of A2345 is added twice");
+  printDeckBreakdownTable(ans);
   return ans;
 });
 console.log("%cpair ends", "color:#0f0;font-size:2rem");
@@ -337,13 +345,15 @@ simThree((d) => {
 simThree((d) => {
   const ans = [...d];
   ans.push(...repeat(5, { rank: R.vii, suit: S.Heart }));
-  console.log("5 additional 7 of hearts are added", ans);
+  console.log("5 additional 7 of hearts are added");
+  printDeckBreakdownTable(ans);
   return ans;
 });
 simThree((d) => {
   const ans = [...d];
   ans.push(...repeat(10, { rank: R.vii, suit: S.Heart }));
-  console.log("10 additional 7 of hearts are added", ans);
+  console.log("10 additional 7 of hearts are added");
+  printDeckBreakdownTable(ans);
   return ans;
 });
 simThree((d) => {
@@ -353,7 +363,8 @@ simThree((d) => {
   ans.push({ rank: R.iii, suit: S.Heart });
   ans.push({ rank: R.iv, suit: S.Heart });
   ans.push({ rank: R.v, suit: S.Heart });
-  console.log("each of A2345 is added", ans);
+  console.log("each of A2345 is added");
+  printDeckBreakdownTable(ans);
   return ans;
 });
 simThree((d) => {
@@ -388,5 +399,27 @@ function printDeckBreakdownTable(deck) {
       ).length;
     }
   }
-  console.table(b, RANKS.toReversed());
+
+  const rendered = {};
+
+  const rankSums = {};
+  for (const rank of RANKS) {
+    let sumRank = 0;
+    for (const suit in b) {
+      sumRank += b[suit][rank];
+    }
+    rankSums[rank] = sumRank;
+  }
+
+  const columnTitles = [];
+  for (const suit in b) {
+    const sumSuit = Object.values(b[suit]).reduce((a, b) => a + b, 0);
+    rendered[`(${sumSuit}) ${suit}`] = b[suit];
+    for (const rank of RANKS.toReversed()) {
+      columnTitles.push(`(${rankSums[rank]}) '${rank}'`);
+      rendered[`(${sumSuit}) ${suit}`][columnTitles[columnTitles.length - 1]] =
+        b[suit][rank];
+    }
+  }
+  console.table(rendered, columnTitles);
 }
