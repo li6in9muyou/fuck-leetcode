@@ -70,7 +70,7 @@ const discardToFindFlush = (hand, maxCardsPerDiscard = 5) => {
 
 const repeat = (n, what) => Array.from({ length: n }).fill(what);
 
-const simulateOne = (deck, isOk, howToDiscard, gameConfig) => {
+function simulateOne(deck, isOk, howToDiscard, gameConfig) {
   let hand = deck.slice(0, gameConfig.handSize);
   let d = deck.slice(gameConfig.handSize);
   let numDiscardUsed = 0;
@@ -99,9 +99,9 @@ const simulateOne = (deck, isOk, howToDiscard, gameConfig) => {
   }
 
   return { success: isOk(hand), numDiscardUsed, handHistory };
-};
+}
 
-const simMany = (
+function simMany(
   prepareDeckBeforeShuffle,
   isOk,
   howToDiscard,
@@ -112,7 +112,7 @@ const simMany = (
   simConfig = {
     totalSim: 3e4,
   },
-) => {
+) {
   const deck = prepareDeckBeforeShuffle([...STANDARD_DECK]);
   const results = Array.from({ length: simConfig.totalSim }).map(() => {
     const shuffled = shuffleDeck(deck);
@@ -146,10 +146,11 @@ const simMany = (
   }
 
   console.table(stats, ["cumulativeSuccessRate", "failRate"]);
-};
+}
 
-const simFlush = (prepareDeck) =>
-  simMany(prepareDeck, isFlush, discardToFindFlush);
+function simFlush(prepareDeck) {
+  return simMany(prepareDeck, isFlush, discardToFindFlush);
+}
 
 simFlush((d) => {
   console.log("libq 5 flush, standard", d);
