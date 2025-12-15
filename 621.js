@@ -1,5 +1,8 @@
 const S = {
   Heart: "Heart",
+  Club: "Club",
+  Diamond: "Diamond",
+  Spade: "Spade",
 };
 const R = { vii: "7", i: "A", ii: "2", iii: "3", iv: "4", v: "5" };
 const SUITS = ["Club", "Diamond", "Heart", "Spade"];
@@ -365,7 +368,25 @@ simThree((d) => {
   ans.push({ rank: R.iii, suit: S.Heart });
   ans.push({ rank: R.iv, suit: S.Heart });
   ans.push({ rank: R.v, suit: S.Heart });
-  console.log("each of A2345 is added twice", ans);
+  console.log("each of A2345 is added twice");
+  printDeckBreakdownTable(ans);
   return ans;
 });
 console.log("%c3oak ends", "color:#0f0;font-size:2rem");
+
+function printDeckBreakdownTable(deck) {
+  const b = {
+    [S.Heart]: {},
+    [S.Club]: {},
+    [S.Diamond]: {},
+    [S.Spade]: {},
+  };
+  for (const suit in b) {
+    for (const rank of RANKS) {
+      b[suit][rank] = deck.filter(
+        (c) => c.suit === suit && c.rank === rank,
+      ).length;
+    }
+  }
+  console.table(b, RANKS.toReversed());
+}
