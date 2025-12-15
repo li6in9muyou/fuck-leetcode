@@ -152,8 +152,8 @@ function simMany(
   console.table(stats, ["cumulativeSuccessRate", "failRate"]);
 }
 
-function simFlush(prepareDeck) {
-  return simMany(prepareDeck, isFlush, discardToFindFlush);
+function simFlush(prepareDeck, discard = discardToFindFlush, goal = isFlush) {
+  return simMany(prepareDeck, goal, discard);
 }
 
 simFlush((d) => {
@@ -244,3 +244,33 @@ simPair((d) => {
   console.log("libq pair, each of A2345 is added twice", ans);
   return ans;
 });
+
+function randomlyDiscard(hand, maxCardsPerDiscard = 5) {
+  const h = shuffleDeck(hand);
+  return {
+    keep: h.slice(maxCardsPerDiscard),
+    discard: h.slice(0, maxCardsPerDiscard),
+  };
+}
+simFlush((d) => {
+  console.log("libq 5 flush, standard, discard randomly", d);
+  return d;
+}, randomlyDiscard);
+simFlush((d) => {
+  const ans = [...d];
+  ans.find((c) => c.suit === "Heart").suit = "Spade";
+  ans.find((c) => c.suit === "Heart").suit = "Spade";
+  ans.find((c) => c.suit === "Heart").suit = "Spade";
+  ans.find((c) => c.suit === "Heart").suit = "Spade";
+  ans.find((c) => c.suit === "Heart").suit = "Spade";
+  console.log("libq 5 flush, 5 heart becomes spade, discard randomly", ans);
+  return ans;
+}, randomlyDiscard);
+simFlush((d) => {
+  const ans = d.slice(10);
+  console.log(
+    "libq 5 flush, 10 cards of same suit removed, discard randomly",
+    ans,
+  );
+  return ans;
+}, randomlyDiscard);
