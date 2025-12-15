@@ -156,27 +156,56 @@ function simFlush(prepareDeck, discard = discardToFindFlush, goal = isFlush) {
   return simMany(prepareDeck, goal, discard);
 }
 
+console.log("%cflush", "color:#f00;font-size:2rem");
 simFlush((d) => {
-  console.log("libq 5 flush, standard", d);
+  console.log("standard", d);
   return d;
 });
-
+function deepCopy(d) {
+  return JSON.parse(JSON.stringify(d));
+}
 simFlush((d) => {
-  const ans = [...d];
+  const ans = deepCopy(d);
   ans.find((c) => c.suit === "Heart").suit = "Spade";
   ans.find((c) => c.suit === "Heart").suit = "Spade";
   ans.find((c) => c.suit === "Heart").suit = "Spade";
   ans.find((c) => c.suit === "Heart").suit = "Spade";
   ans.find((c) => c.suit === "Heart").suit = "Spade";
-  console.log("libq 5 flush, 5 heart becomes spade", ans);
+  console.log("5 heart becomes spade", ans);
   return ans;
 });
-
 simFlush((d) => {
   const ans = d.slice(10);
-  console.log("libq 5 flush, 10 cards of same suit removed", ans);
+  console.log("10 cards of same suit removed", ans);
   return ans;
 });
+function randomlyDiscard(hand, maxCardsPerDiscard = 5) {
+  const h = shuffleDeck(hand);
+  return {
+    keep: h.slice(maxCardsPerDiscard),
+    discard: h.slice(0, maxCardsPerDiscard),
+  };
+}
+simFlush((d) => {
+  console.log("standard, discard randomly", d);
+  return d;
+}, randomlyDiscard);
+simFlush((d) => {
+  const ans = deepCopy(d);
+  ans.find((c) => c.suit === "Heart").suit = "Spade";
+  ans.find((c) => c.suit === "Heart").suit = "Spade";
+  ans.find((c) => c.suit === "Heart").suit = "Spade";
+  ans.find((c) => c.suit === "Heart").suit = "Spade";
+  ans.find((c) => c.suit === "Heart").suit = "Spade";
+  console.log("5 heart becomes spade, discard randomly", ans);
+  return ans;
+}, randomlyDiscard);
+simFlush((d) => {
+  const ans = d.slice(10);
+  console.log("10 cards of same suit removed, discard randomly", ans);
+  return ans;
+}, randomlyDiscard);
+console.log("%cflush ends", "color:#0f0;font-size:2rem");
 
 function getRankDistribution(cards) {
   return cards.reduce((dist, card) => {
@@ -203,20 +232,21 @@ function findPair(hand, maxCardsPerDiscard = 5) {
 function simPair(prepareDeck) {
   return simMany(prepareDeck, containsPair, findPair);
 }
+console.log("%cpair", "color:#f00;font-size:2rem");
 simPair((d) => {
-  console.log("libq pair, standard deck");
+  console.log("standard deck");
   return d;
 });
 simPair((d) => {
   const ans = [...d];
   ans.push(...repeat(5, { rank: R.vii, suit: S.Heart }));
-  console.log("libq pair, 5 additional 7 of hearts are added", ans);
+  console.log("5 additional 7 of hearts are added", ans);
   return ans;
 });
 simPair((d) => {
   const ans = [...d];
   ans.push(...repeat(10, { rank: R.vii, suit: S.Heart }));
-  console.log("libq pair, 10 additional 7 of hearts are added", ans);
+  console.log("10 additional 7 of hearts are added", ans);
   return ans;
 });
 simPair((d) => {
@@ -226,7 +256,7 @@ simPair((d) => {
   ans.push({ rank: R.iii, suit: S.Heart });
   ans.push({ rank: R.iv, suit: S.Heart });
   ans.push({ rank: R.v, suit: S.Heart });
-  console.log("libq pair, each of A2345 is added", ans);
+  console.log("each of A2345 is added", ans);
   return ans;
 });
 simPair((d) => {
@@ -241,36 +271,101 @@ simPair((d) => {
   ans.push({ rank: R.iii, suit: S.Heart });
   ans.push({ rank: R.iv, suit: S.Heart });
   ans.push({ rank: R.v, suit: S.Heart });
-  console.log("libq pair, each of A2345 is added twice", ans);
+  console.log("each of A2345 is added twice", ans);
   return ans;
 });
+console.log("%cpair ends", "color:#0f0;font-size:2rem");
 
-function randomlyDiscard(hand, maxCardsPerDiscard = 5) {
-  const h = shuffleDeck(hand);
-  return {
-    keep: h.slice(maxCardsPerDiscard),
-    discard: h.slice(0, maxCardsPerDiscard),
-  };
+function partition(array, predict) {
+  const yes = [];
+  const no = [];
+  for (let i = 0; i < array.length; i++) {
+    if (predict(array[i], array)) {
+      yes.push(array[i]);
+    } else {
+      no.push(array[i]);
+    }
+  }
+  return [yes, no];
 }
-simFlush((d) => {
-  console.log("libq 5 flush, standard, discard randomly", d);
+function containsThreeOak(cards) {
+  return Object.values(getRankDistribution(cards)).some((c) => c >= 3);
+}
+function findThreeOak(hand, maxCardsPerDiscard) {
+  if (containsThreeOak(hand)) {
+    return { keep: hand, discard: [] };
+  }
+
+  const dist = getRankDistribution(hand);
+
+  if (containsPair(hand)) {
+    let rankOfPair;
+    for (const rank in dist) {
+      if (dist[rank] === 2) {
+        rankOfPair = rank;
+      }
+    }
+    const [y, n] = partition(hand, (c) => c.rank === rankOfPair);
+    const nMinKeep = Math.max(2, hand.length - maxCardsPerDiscard);
+    const partitioned = [...y, ...n];
+    return {
+      keep: partitioned.slice(0, nMinKeep),
+      discard: partitioned.slice(nMinKeep),
+    };
+  } else {
+    return {
+      discard: hand.slice(0, maxCardsPerDiscard),
+      keep: hand.slice(maxCardsPerDiscard),
+    };
+  }
+}
+function simThree(prepareDeck, discard = findThreeOak) {
+  return simMany(prepareDeck, containsThreeOak, discard);
+}
+console.log("%c3oak", "color:#f00;font-size:2rem");
+simThree((d) => {
+  console.log("standard deck", d);
+  return d;
+});
+simThree((d) => {
+  console.log("standard deck, randomly discard", d);
   return d;
 }, randomlyDiscard);
-simFlush((d) => {
+simThree((d) => {
   const ans = [...d];
-  ans.find((c) => c.suit === "Heart").suit = "Spade";
-  ans.find((c) => c.suit === "Heart").suit = "Spade";
-  ans.find((c) => c.suit === "Heart").suit = "Spade";
-  ans.find((c) => c.suit === "Heart").suit = "Spade";
-  ans.find((c) => c.suit === "Heart").suit = "Spade";
-  console.log("libq 5 flush, 5 heart becomes spade, discard randomly", ans);
+  ans.push(...repeat(5, { rank: R.vii, suit: S.Heart }));
+  console.log("5 additional 7 of hearts are added", ans);
   return ans;
-}, randomlyDiscard);
-simFlush((d) => {
-  const ans = d.slice(10);
-  console.log(
-    "libq 5 flush, 10 cards of same suit removed, discard randomly",
-    ans,
-  );
+});
+simThree((d) => {
+  const ans = [...d];
+  ans.push(...repeat(10, { rank: R.vii, suit: S.Heart }));
+  console.log("10 additional 7 of hearts are added", ans);
   return ans;
-}, randomlyDiscard);
+});
+simThree((d) => {
+  const ans = [...d];
+  ans.push({ rank: R.i, suit: S.Heart });
+  ans.push({ rank: R.ii, suit: S.Heart });
+  ans.push({ rank: R.iii, suit: S.Heart });
+  ans.push({ rank: R.iv, suit: S.Heart });
+  ans.push({ rank: R.v, suit: S.Heart });
+  console.log("each of A2345 is added", ans);
+  return ans;
+});
+simThree((d) => {
+  const ans = [...d];
+  ans.push({ rank: R.i, suit: S.Heart });
+  ans.push({ rank: R.ii, suit: S.Heart });
+  ans.push({ rank: R.iii, suit: S.Heart });
+  ans.push({ rank: R.iv, suit: S.Heart });
+  ans.push({ rank: R.v, suit: S.Heart });
+  ans.push({ rank: R.i, suit: S.Heart });
+  ans.push({ rank: R.ii, suit: S.Heart });
+  ans.push({ rank: R.iii, suit: S.Heart });
+  ans.push({ rank: R.iv, suit: S.Heart });
+  ans.push({ rank: R.v, suit: S.Heart });
+  console.log("each of A2345 is added twice", ans);
+  return ans;
+});
+console.log("%c3oak ends", "color:#0f0;font-size:2rem");
