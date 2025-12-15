@@ -17,6 +17,7 @@ const RANKS = [
 
 const createStandardDeck = () =>
   SUITS.flatMap((suit) => RANKS.map((rank) => ({ suit, rank })));
+const STANDARD_DECK = createStandardDeck();
 
 const shuffleDeck = (array) => {
   const shuffled = [...array];
@@ -27,6 +28,8 @@ const shuffleDeck = (array) => {
   return shuffled;
 };
 
+// console.log("libq shuffled", shuffleDeck(createStandardDeck()));
+
 const isFlush = (hand, flushRequirement = 5) => {
   const suitCounts = hand.reduce((acc, card) => {
     const count = acc[card.suit] || 0;
@@ -36,37 +39,29 @@ const isFlush = (hand, flushRequirement = 5) => {
   return Object.values(suitCounts).some((count) => count >= flushRequirement);
 };
 
-const getFlushDiscardStrategy = (hand, maxDiscard) => {
+const discardToFindFlush = (hand, maxCardsPerDiscard = 5) => {
   if (isFlush(hand)) {
     return { keep: hand, discard: [] };
   }
 
-  const suitGroups = hand.reduce((acc, card) => {
-    const group = acc[card.suit] || [];
+  const groupBySuit = hand.reduce((acc, card) => {
+    const group = acc[card.suit] ?? [];
     return { ...acc, [card.suit]: [...group, card] };
   }, {});
 
-  const presentSuits = Object.keys(suitGroups);
-
-  if (presentSuits.length === 0) {
-    return { keep: [], discard: [] };
-  }
+  const presentSuits = Object.keys(groupBySuit);
 
   const bestSuit = presentSuits.reduce((best, currentSuit) => {
-    const bestCount = suitGroups[best] ? suitGroups[best].length : 0;
-    const currentCount = suitGroups[currentSuit].length;
+    const bestCount = groupBySuit[best] ? groupBySuit[best].length : 0;
+    const currentCount = groupBySuit[currentSuit].length;
 
     return currentCount > bestCount ? currentSuit : best;
   }, presentSuits[0]);
 
-  const keepCards = suitGroups[bestSuit] || [];
-
+  const keepCards = groupBySuit[bestSuit];
   const allDiscardable = hand.filter((card) => card.suit !== bestSuit);
-
-  const discardCount = Math.min(allDiscardable.length, maxDiscard);
-
+  const discardCount = Math.min(allDiscardable.length, maxCardsPerDiscard);
   const discardCards = allDiscardable.slice(0, discardCount);
-
   const remainingNonTarget = allDiscardable.slice(discardCount);
 
   return {
@@ -75,103 +70,232 @@ const getFlushDiscardStrategy = (hand, maxDiscard) => {
   };
 };
 
-const simulateGame = ({
-  handSize,
-  maxDraws,
-  maxDiscard,
-  isGoalAchieved,
-  getDiscardStrategy,
+const repeat = (n, what) => Array.from({ length: n }).fill(what);
+
+// console.log(
+//   "libq findflush/62/discard",
+//   discardToFindFlush([
+//     ...repeat(2, {
+//       suit: "s",
+//       rank: 1111,
+//     }),
+//     ...repeat(6, {
+//       suit: "d",
+//       rank: 1111,
+//     }),
+//   ]).discard,
+// );
+//
+// console.log(
+//   "libq findflush/53/discard",
+//   discardToFindFlush([
+//     ...repeat(3, {
+//       suit: "s",
+//       rank: 1111,
+//     }),
+//     ...repeat(5, {
+//       suit: "d",
+//       rank: 1111,
+//     }),
+//   ]).discard,
+// );
+//
+// console.log(
+//   "libq findflush/44/discard",
+//   discardToFindFlush([
+//     ...repeat(4, {
+//       suit: "s",
+//       rank: 1111,
+//     }),
+//     ...repeat(4, {
+//       suit: "d",
+//       rank: 1111,
+//     }),
+//   ]).discard,
+// );
+//
+// console.log(
+//   "libq findflush/332/discard",
+//   discardToFindFlush([
+//     ...repeat(3, {
+//       suit: "s",
+//       rank: 1111,
+//     }),
+//     ...repeat(3, {
+//       suit: "d",
+//       rank: 1111,
+//     }),
+//     ...repeat(2, {
+//       suit: "h",
+//       rank: 1111,
+//     }),
+//   ]).discard,
+// );
+//
+// console.log(
+//   "libq findflush/2222/discard",
+//   discardToFindFlush([
+//     ...repeat(2, {
+//       suit: "s",
+//       rank: 1111,
+//     }),
+//     ...repeat(2, {
+//       suit: "d",
+//       rank: 1111,
+//     }),
+//     ...repeat(2, {
+//       suit: "h",
+//       rank: 1111,
+//     }),
+//     ...repeat(2, {
+//       suit: "c",
+//       rank: 1111,
+//     }),
+//   ]).discard,
+// );
+
+const simulateOne = ({
+  deck,
+  isOk,
+  howToDiscard,
+  handSize = 8,
+  maxNumDiscards = 3,
+  maxCardsPerDiscard = 5,
 }) => {
-  const initialDeck = createStandardDeck();
-  let currentDeck = shuffleDeck(initialDeck);
-  let hand = [];
-  let draws = 0;
+  let hand = deck.slice(0, handSize);
+  let d = deck.slice(handSize);
+  let numDiscardUsed = 0;
+  const handHistory = [hand];
 
-  const initialDrawCount = handSize;
-  hand = currentDeck.slice(0, initialDrawCount);
-  currentDeck = currentDeck.slice(initialDrawCount);
-  draws++;
+  while (true) {
+    if (isOk(hand)) {
+      break;
+    }
+    if (numDiscardUsed >= maxNumDiscards) {
+      break;
+    }
+    if (d.length === 0) {
+      break;
+    }
 
-  if (isGoalAchieved(hand)) {
-    return { success: true, draws };
-  }
+    const { keep, discard } = howToDiscard(hand, maxCardsPerDiscard);
 
-  while (draws < maxDraws) {
-    const { keep, discard } = getDiscardStrategy(hand, maxDiscard);
-
-    const drawCount = handSize - keep.length;
-
-    currentDeck = currentDeck.filter((card) => !discard.includes(card));
-
-    const redrawCards = currentDeck.slice(0, drawCount);
-    currentDeck = currentDeck.slice(drawCount);
+    const drawCount = discard.length;
+    const redrawCards = d.slice(0, drawCount);
+    d = d.slice(drawCount);
+    numDiscardUsed++;
 
     hand = [...keep, ...redrawCards];
-    draws++;
-
-    if (isGoalAchieved(hand)) {
-      return { success: true, draws };
-    }
+    handHistory.push(hand);
   }
 
-  return { success: false, draws };
+  return { success: isOk(hand), numDiscardUsed, handHistory };
 };
 
-const runSimulation = (simulations, handSize, maxDiscard, maxMaxDraws) => {
-  const CONFIG = {
-    handSize,
-    maxDiscard,
-    isGoalAchieved: isFlush,
-    getDiscardStrategy: getFlushDiscardStrategy,
-    maxDraws: maxMaxDraws + 1,
-  };
+// console.log(
+//   "libq simulate/8",
+//   simulateOne({
+//     deck: [...repeat(8, { suit: "s", rank: 99 })],
+//     isOk: isFlush,
+//     howToDiscard: discardToFindFlush,
+//   }),
+// );
+//
+// console.log(
+//   "libq simulate/441",
+//   simulateOne({
+//     deck: [
+//       ...repeat(4, { suit: "s", rank: 99 }),
+//       ...repeat(4, { suit: "d", rank: 99 }),
+//       ...repeat(1, { suit: "s", rank: 99 }),
+//     ],
+//     isOk: isFlush,
+//     howToDiscard: discardToFindFlush,
+//   }),
+// );
+//
+// console.log(
+//   "libq simulate/41",
+//   simulateOne({
+//     deck: [
+//       ...repeat(4, { suit: "s", rank: 99 }),
+//       ...repeat(1, { suit: "d", rank: 99 }),
+//     ],
+//     isOk: isFlush,
+//     howToDiscard: discardToFindFlush,
+//   }),
+// );
+//
+// console.log(
+//   "libq simulatemany",
+//   Array.from({ length: 1000 }).map(() => {
+//     return simulateOne({
+//       deck: shuffleDeck(STANDARD_DECK),
+//       isOk: isFlush,
+//       howToDiscard: discardToFindFlush,
+//     });
+//   }),
+// );
 
-  const initialStats = Array.from({ length: maxMaxDraws + 1 }, (_, i) => ({
-    draws: i + 1,
-    successes: 0,
-    totalAttempts: 0,
-    probability: 0,
-  }));
-
-  const results = Array.from({ length: simulations }, () =>
-    simulateGame(CONFIG),
-  );
-
-  const finalStats = results.reduce(
-    (stats, result) => {
-      for (let d = 1; d <= maxMaxDraws + 1; d++) {
-        if (result.draws <= d) {
-          stats[d - 1].successes += result.success ? 1 : 0;
-          stats[d - 1].totalAttempts++;
-        }
+const simFlush = (prepareDeck) => {
+  const TOTAL_SIM = 3e4;
+  const d = prepareDeck([...STANDARD_DECK]);
+  const results = Array.from({ length: TOTAL_SIM })
+    .map(() => {
+      return simulateOne({
+        deck: shuffleDeck(d),
+        isOk: isFlush,
+        howToDiscard: discardToFindFlush,
+        maxNumDiscards: 3,
+      });
+    })
+    .reduce((groupby, row) => {
+      const du = row.numDiscardUsed;
+      if (groupby[du] === undefined) {
+        groupby[du] = {
+          discard: du,
+          success: 0,
+        };
       }
-      return stats;
-    },
-    initialStats.map((s) => ({ ...s, successes: 0, totalAttempts: 0 })),
-  );
 
-  const finalProbabilities = finalStats.map((stat) => {
-    const probability =
-      stat.totalAttempts > 0 ? stat.successes / stat.totalAttempts : 0;
-    return {
-      "弃牌次数 (D)": stat.draws - 1,
-      成功次数: stat.successes,
-      模拟次数: simulations,
-      成功概率: (probability * 100).toFixed(2) + "%",
-    };
-  });
+      const g = groupby[du];
+      row.success && (g.success += 1);
+      g.successRate = (g.success / TOTAL_SIM) * 100;
+      return groupby;
+    }, {});
 
-  return finalProbabilities;
+  for (let i = 0; i < Object.keys(results).length; i++) {
+    if (i === 0) {
+      results[i].cumulativeSuccessRate = results[i].successRate;
+    } else {
+      results[i].cumulativeSuccessRate =
+        results[i - 1].cumulativeSuccessRate + results[i].successRate;
+    }
+    results[i].failRate = +(100 - results[i].cumulativeSuccessRate).toFixed(2);
+    results[i].cumulativeSuccessRate =
+      +results[i].cumulativeSuccessRate.toFixed(2);
+  }
+  console.table(results, ["cumulativeSuccessRate", "failRate"]);
 };
 
-const SIMULATIONS = 10000;
-const HAND_SIZE = 8;
-const MAX_DISCARD = 5;
-const MAX_DRAW_CYCLES = 6;
-const flushResults = runSimulation(
-  SIMULATIONS,
-  HAND_SIZE,
-  MAX_DISCARD,
-  MAX_DRAW_CYCLES,
-);
-console.table(flushResults);
+simFlush((d) => {
+  console.log("libq 5 flush, standard", d);
+  return d;
+});
+
+simFlush((d) => {
+  const ans = [...d];
+  ans.find((c) => c.suit === "Heart").suit = "Spade";
+  ans.find((c) => c.suit === "Heart").suit = "Spade";
+  ans.find((c) => c.suit === "Heart").suit = "Spade";
+  ans.find((c) => c.suit === "Heart").suit = "Spade";
+  ans.find((c) => c.suit === "Heart").suit = "Spade";
+  console.log("libq 5 flush, 5 heart becomes spade", ans);
+  return ans;
+});
+
+simFlush((d) => {
+  const ans = d.slice(10);
+  console.log("libq 5 flush, 10 cards of same suit removed", ans);
+  return ans;
+});
