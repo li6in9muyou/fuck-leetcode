@@ -1,3 +1,7 @@
+const S = {
+  Heart: "Heart",
+};
+const R = { vii: "7", i: "A", ii: "2", iii: "3", iv: "4", v: "5" };
 const SUITS = ["Club", "Diamond", "Heart", "Spade"];
 const RANKS = [
   "2",
@@ -171,5 +175,72 @@ simFlush((d) => {
 simFlush((d) => {
   const ans = d.slice(10);
   console.log("libq 5 flush, 10 cards of same suit removed", ans);
+  return ans;
+});
+
+function getRankDistribution(cards) {
+  return cards.reduce((dist, card) => {
+    if (dist[card.rank] === undefined) {
+      dist[card.rank] = 0;
+    }
+    dist[card.rank] += 1;
+    return dist;
+  }, {});
+}
+
+function containsPair(cards) {
+  return Object.values(getRankDistribution(cards)).some((c) => c >= 2);
+}
+function findPair(hand, maxCardsPerDiscard = 5) {
+  if (containsPair(hand)) {
+    return { keep: hand, discard: [] };
+  }
+  return {
+    keep: [...hand.slice(maxCardsPerDiscard)],
+    discard: hand.slice(0, maxCardsPerDiscard),
+  };
+}
+function simPair(prepareDeck) {
+  return simMany(prepareDeck, containsPair, findPair);
+}
+simPair((d) => {
+  console.log("libq pair, standard deck");
+  return d;
+});
+simPair((d) => {
+  const ans = [...d];
+  ans.push(...repeat(5, { rank: R.vii, suit: S.Heart }));
+  console.log("libq pair, 5 additional 7 of hearts are added", ans);
+  return ans;
+});
+simPair((d) => {
+  const ans = [...d];
+  ans.push(...repeat(10, { rank: R.vii, suit: S.Heart }));
+  console.log("libq pair, 10 additional 7 of hearts are added", ans);
+  return ans;
+});
+simPair((d) => {
+  const ans = [...d];
+  ans.push({ rank: R.i, suit: S.Heart });
+  ans.push({ rank: R.ii, suit: S.Heart });
+  ans.push({ rank: R.iii, suit: S.Heart });
+  ans.push({ rank: R.iv, suit: S.Heart });
+  ans.push({ rank: R.v, suit: S.Heart });
+  console.log("libq pair, each of A2345 is added", ans);
+  return ans;
+});
+simPair((d) => {
+  const ans = [...d];
+  ans.push({ rank: R.i, suit: S.Heart });
+  ans.push({ rank: R.ii, suit: S.Heart });
+  ans.push({ rank: R.iii, suit: S.Heart });
+  ans.push({ rank: R.iv, suit: S.Heart });
+  ans.push({ rank: R.v, suit: S.Heart });
+  ans.push({ rank: R.i, suit: S.Heart });
+  ans.push({ rank: R.ii, suit: S.Heart });
+  ans.push({ rank: R.iii, suit: S.Heart });
+  ans.push({ rank: R.iv, suit: S.Heart });
+  ans.push({ rank: R.v, suit: S.Heart });
+  console.log("libq pair, each of A2345 is added twice", ans);
   return ans;
 });
