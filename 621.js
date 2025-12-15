@@ -19,21 +19,21 @@ const createStandardDeck = () =>
   SUITS.flatMap((suit) => RANKS.map((rank) => ({ suit, rank })));
 
 const shuffleDeck = (array) => {
-  const newArray = [...array];
-  for (let i = newArray.length - 1; i > 0; i--) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  return newArray;
+  return shuffled;
 };
 
-const isFlush = (hand) => {
+const isFlush = (hand, flushRequirement = 5) => {
   const suitCounts = hand.reduce((acc, card) => {
     const count = acc[card.suit] || 0;
     return { ...acc, [card.suit]: count + 1 };
   }, {});
 
-  return Object.values(suitCounts).some((count) => count >= 5);
+  return Object.values(suitCounts).some((count) => count >= flushRequirement);
 };
 
 const getFlushDiscardStrategy = (hand, maxDiscard) => {
@@ -168,29 +168,10 @@ const SIMULATIONS = 10000;
 const HAND_SIZE = 8;
 const MAX_DISCARD = 5;
 const MAX_DRAW_CYCLES = 6;
-
-console.log(`--- 🃏 同花手型找牌模拟 ---`);
-console.log(
-  `参数: 模拟次数=${SIMULATIONS}, 手牌上限=${HAND_SIZE}, 最大弃牌=${MAX_DISCARD}`,
-);
-
 const flushResults = runSimulation(
   SIMULATIONS,
   HAND_SIZE,
   MAX_DISCARD,
   MAX_DRAW_CYCLES,
 );
-
-console.log(`\n结果 (目标: 8张手牌中至少有5张同花牌)`);
 console.table(flushResults);
-
-console.log(`\n--- 🚀 额外案例 (H=9, D=4) ---`);
-const HAND_SIZE_EX = 9;
-const MAX_DRAW_CYCLES_EX = 4;
-const extraResults = runSimulation(
-  SIMULATIONS,
-  HAND_SIZE_EX,
-  MAX_DISCARD,
-  MAX_DRAW_CYCLES_EX,
-);
-console.table(extraResults);
