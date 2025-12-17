@@ -131,7 +131,7 @@ function simMany(
 ) {
   const gameConfig = Object.assign(
     {
-      maxNumDiscards: 3,
+      maxNumDiscards: 4,
       handSize: 8,
       maxCardsPerDiscard: 5,
     },
@@ -146,6 +146,9 @@ function simMany(
     const shuffled = shuffleDeck(deck);
     return simulateOne(shuffled, isOk, howToDiscard, gameConfig);
   });
+  console.groupCollapsed("libq simmany/results");
+  console.log(results);
+  console.groupEnd();
 
   const stats = results.reduce((groupby, row) => {
     const du = row.numDiscardUsed;
@@ -891,25 +894,6 @@ function simTwoPair() {
   );
   simMany(
     (d) => {
-      console.log("standard deck, find high card");
-      printDeckBreakdownTable(d);
-      return d;
-    },
-    containsTwoPair,
-    findHighCard,
-  );
-  simMany(
-    (d) => {
-      console.log("standard deck, naive greedy, handsize=6");
-      printDeckBreakdownTable(d);
-      return d;
-    },
-    containsTwoPair,
-    findTwoPair,
-    { handSize: 6 },
-  );
-  simMany(
-    (d) => {
       console.log("standard deck, naive greedy, handsize=7");
       printDeckBreakdownTable(d);
       return d;
@@ -926,6 +910,36 @@ function simTwoPair() {
     },
     containsTwoPair,
     findTwoPair,
+  );
+  simMany(
+    (d) => {
+      console.log("standard deck, naive greedy, handsize=8,4 per discard");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsTwoPair,
+    findTwoPair,
+    { maxCardsPerDiscard: 4 },
+  );
+  simMany(
+    (d) => {
+      console.log("standard deck, naive greedy, handsize=8,3 per discard");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsTwoPair,
+    findTwoPair,
+    { maxCardsPerDiscard: 3 },
+  );
+  simMany(
+    (d) => {
+      console.log("standard deck, naive greedy, handsize=8,1 per discard");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsTwoPair,
+    findTwoPair,
+    { maxCardsPerDiscard: 1 },
   );
   simMany(
     (d) => {
