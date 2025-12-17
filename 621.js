@@ -1009,6 +1009,200 @@ function simHouse() {
     findFullHouse,
   );
 
+  // 改法1：JQKA各加3张（总计12张）
+  simMany(
+    (d) => {
+      const addCards = [
+        // J新增3张
+        { rank: "J", suit: "Heart" },
+        { rank: "J", suit: "Club" },
+        { rank: "J", suit: "Diamond" },
+        // Q新增3张
+        { rank: "Q", suit: "Heart" },
+        { rank: "Q", suit: "Club" },
+        { rank: "Q", suit: "Diamond" },
+        // K新增3张
+        { rank: "K", suit: "Heart" },
+        { rank: "K", suit: "Club" },
+        { rank: "K", suit: "Diamond" },
+        // A新增3张
+        { rank: "A", suit: "Heart" },
+        { rank: "A", suit: "Club" },
+        { rank: "A", suit: "Diamond" },
+      ];
+      const modifiedDeck = [...d, ...addCards];
+      console.log("改法1：JQKA各加3张（总计12张）");
+      printDeckBreakdownTable(modifiedDeck);
+      return modifiedDeck;
+    },
+    containsFullHouse,
+    findFullHouse,
+  );
+
+  // 改法2：2345各去掉3张（总计12张）
+  simMany(
+    (d) => {
+      const removeCountMap = { 2: 0, 3: 0, 4: 0, 5: 0 };
+      const modifiedDeck = d.filter((card) => {
+        const rank = card.rank;
+        if (["2", "3", "4", "5"].includes(rank) && removeCountMap[rank] < 3) {
+          removeCountMap[rank] += 1;
+          return false;
+        }
+        return true;
+      });
+      console.log("改法2：2345各去掉3张（总计12张）");
+      printDeckBreakdownTable(modifiedDeck);
+      return modifiedDeck;
+    },
+    containsFullHouse,
+    findFullHouse,
+  );
+
+  // 改法3：9和8各加6张（总计12张）
+  simMany(
+    (d) => {
+      const addCards = [
+        // 8新增6张
+        { rank: "8", suit: "Heart" },
+        { rank: "8", suit: "Club" },
+        { rank: "8", suit: "Diamond" },
+        { rank: "8", suit: "Spade" },
+        { rank: "8", suit: "Heart" },
+        { rank: "8", suit: "Club" },
+        // 9新增6张
+        { rank: "9", suit: "Heart" },
+        { rank: "9", suit: "Club" },
+        { rank: "9", suit: "Diamond" },
+        { rank: "9", suit: "Spade" },
+        { rank: "9", suit: "Heart" },
+        { rank: "9", suit: "Club" },
+      ];
+      const modifiedDeck = [...d, ...addCards];
+      console.log("改法3：9和8各加6张（总计12张）");
+      printDeckBreakdownTable(modifiedDeck);
+      return modifiedDeck;
+    },
+    containsFullHouse,
+    findFullHouse,
+  );
+
+  // 新增改法1：678910J各加1张（6张） + A23456各去掉1张（6张） 总计12张修改
+  simMany(
+    (d) => {
+      // 步骤1：A23456各移除1张（共6张）
+      const removeCountMap = { A: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+      const filteredDeck = d.filter((card) => {
+        const rank = card.rank;
+        if (
+          ["A", "2", "3", "4", "5", "6"].includes(rank) &&
+          removeCountMap[rank] < 1
+        ) {
+          removeCountMap[rank] += 1;
+          return false; // 移除该牌
+        }
+        return true;
+      });
+
+      // 步骤2：678910J各新增1张（共6张）
+      const addCards = [
+        { rank: "6", suit: "Heart" },
+        { rank: "7", suit: "Club" },
+        { rank: "8", suit: "Diamond" },
+        { rank: "9", suit: "Spade" },
+        { rank: "10", suit: "Heart" },
+        { rank: "J", suit: "Club" },
+      ];
+      const modifiedDeck = [...filteredDeck, ...addCards];
+
+      console.log("新增改法1：678910J各加1张 + A23456各去掉1张（总计12张）");
+      printDeckBreakdownTable(modifiedDeck);
+      return modifiedDeck;
+    },
+    containsFullHouse,
+    findFullHouse,
+  );
+
+  // 新增改法2：456789各加两张（2×6=12张） 总计12张修改
+  simMany(
+    (d) => {
+      // 456789各新增2张（共12张）
+      const addCards = [
+        // 4新增2张
+        { rank: "4", suit: "Heart" },
+        { rank: "4", suit: "Club" },
+        // 5新增2张
+        { rank: "5", suit: "Heart" },
+        { rank: "5", suit: "Club" },
+        // 6新增2张
+        { rank: "6", suit: "Heart" },
+        { rank: "6", suit: "Club" },
+        // 7新增2张
+        { rank: "7", suit: "Heart" },
+        { rank: "7", suit: "Club" },
+        // 8新增2张
+        { rank: "8", suit: "Heart" },
+        { rank: "8", suit: "Club" },
+        // 9新增2张
+        { rank: "9", suit: "Heart" },
+        { rank: "9", suit: "Club" },
+      ];
+      const modifiedDeck = [...d, ...addCards];
+
+      console.log("新增改法2：456789各加两张（总计12张）");
+      printDeckBreakdownTable(modifiedDeck);
+      return modifiedDeck;
+    },
+    containsFullHouse,
+    findFullHouse,
+  );
+
+  // 新增改法2：456789各加两张（2×6=12张） 总计12张修改
+  simMany(
+    (d) => {
+      // 456789各新增2张（共12张）
+      const addCards = [
+        // 4新增2张
+        { rank: "4", suit: "Heart" },
+        { rank: "4", suit: "Club" },
+        // 5新增2张
+        { rank: "5", suit: "Heart" },
+        { rank: "5", suit: "Club" },
+        // 6新增2张
+        { rank: "6", suit: "Heart" },
+        { rank: "6", suit: "Club" },
+        // 7新增2张
+        { rank: "7", suit: "Heart" },
+        { rank: "7", suit: "Club" },
+        // 8新增2张
+        { rank: "8", suit: "Heart" },
+        { rank: "8", suit: "Club" },
+        // 9新增2张
+        { rank: "9", suit: "Heart" },
+        { rank: "9", suit: "Club" },
+      ];
+      const modifiedDeck = [...d, ...addCards];
+
+      console.log("+456789 +456789, handsize=9");
+      printDeckBreakdownTable(modifiedDeck);
+      return modifiedDeck;
+    },
+    containsFullHouse,
+    findFullHouse,
+    { handSize: 9 },
+  );
+
+  simMany(
+    (d) => {
+      console.log("standard deck (full house simulation)");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsFullHouse,
+    findFullHouse,
+    { handSize: 9 },
+  );
+
   console.log("%chouse ends", "color:#0f0;font-size:2rem");
 }
 
