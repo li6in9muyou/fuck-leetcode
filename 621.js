@@ -575,14 +575,14 @@ function runSimulationForType(type) {
         discard: findThreeOak,
       });
       break;
-    case "4oak":
-    case "5oak":
-    case "house":
     case "2pair":
       simTwoPair();
       break;
+    case "4oak":
+    case "5oak":
+    case "house":
     default:
-      // 已在调用处处理，此处可忽略
+      console.log(`Simulation for hand type '${type}' is not yet implemented.`);
       break;
   }
 }
