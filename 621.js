@@ -556,13 +556,6 @@ function runSimulationsBasedOnUrl() {
 }
 
 function runSimulationForType(type) {
-  // 适配 simMany 的入参结构
-  const prepareDeckCaller = (prepareDeckCallback, discardStrategy) =>
-    runSimulationWrapper(prepareDeckCallback, {
-      goal: discardStrategy.goal,
-      discard: discardStrategy.discard,
-    });
-
   switch (type) {
     case "flush":
       simFlush((prep, discard) => simMany(prep, isFlush, discard), {
