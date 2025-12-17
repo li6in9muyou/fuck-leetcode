@@ -317,7 +317,7 @@ function runSimulationsBasedOnUrl() {
     console.log(
       "URL parameters not available (not in browser or missing search query). Running all simulations.",
     );
-    const HAND_TYPES = ["flush", "pair", "3oak"];
+    const HAND_TYPES = ["flush", "pair", "3oak", "house"]; // 新增house
     HAND_TYPES.forEach((type) => runSimulationForType(type));
     return;
   }
@@ -342,7 +342,7 @@ function runSimulationsBasedOnUrl() {
     "3oak",
     "4oak",
     "5oak",
-    "house",
+    "house", // 新增house
     "2pair",
   ];
 
@@ -369,9 +369,11 @@ function runSimulationForType(type) {
     case "2pair":
       simTwoPair();
       break;
+    case "house": // 新增house分支
+      simHouse();
+      break;
     case "4oak":
     case "5oak":
-    case "house":
     default:
       console.log(`Simulation for hand type '${type}' is not yet implemented.`);
       break;
@@ -852,6 +854,162 @@ function simTwoPair() {
   );
 
   console.log("%c2pair ends", "color:#0f0;font-size:2rem");
+}
+
+// 新增：判断葫芦牌型
+function containsFullHouse(hand) {
+  // 统计每个rank的出现次数
+  const rankCount = countBy(hand, "rank");
+  const rankEntries = Object.entries(rankCount); // [rank, count] 数组
+
+  // 过滤掉5张同rank的情况（22222不算葫芦）
+  const validRankEntries = rankEntries.filter(([_, count]) => count !== 5);
+  if (validRankEntries.length < 2) return false; // 至少需要两个不同rank
+
+  // 步骤1：找出所有出现次数≥3的rank（可能有多个，比如222333）
+  const threePlusRanks = validRankEntries.filter(([_, count]) => count >= 3);
+  if (threePlusRanks.length === 0) return false;
+
+  // 步骤2：对每个≥3的rank，检查是否存在其他rank≥2
+  for (const [threeRank, threeCount] of threePlusRanks) {
+    // 找非当前rank、且次数≥2的rank
+    const hasValidPair = validRankEntries.some(
+      ([pairRank, pairCount]) => pairRank !== threeRank && pairCount >= 2,
+    );
+    if (hasValidPair) return true;
+  }
+
+  return false;
+}
+
+// 新增：葫芦牌型的丢牌策略
+function findFullHouse(hand, maxCardsPerDiscard = 5) {
+  // 已凑出葫芦，无需丢弃
+  if (containsFullHouse(hand)) {
+    return { keep: hand, discard: [] };
+  }
+
+  // 工具函数：获取rank的数值（用于大小排序）
+  const getRankValue = (rank) => {
+    const rankMap = {
+      A: 14,
+      K: 13,
+      Q: 12,
+      J: 11,
+      10: 10,
+      9: 9,
+      8: 8,
+      7: 7,
+      6: 6,
+      5: 5,
+      4: 4,
+      3: 3,
+      2: 2,
+    };
+    return rankMap[rank] || 0;
+  };
+
+  // 步骤1：按rank分组并统计次数
+  const rankGroups = groupBy(hand, "rank");
+  const rankEntries = Object.entries(rankGroups).map(([rank, cards]) => ({
+    rank,
+    cards,
+    count: cards.length,
+    value: getRankValue(rank),
+  }));
+
+  // 步骤2：处理有三条/四条的情况（优先保留三条）
+  const threePlusEntries = rankEntries.filter((item) => item.count >= 3);
+  if (threePlusEntries.length > 0) {
+    // 选点数最大的三条/四条（优先保留大点数）
+    const targetThreeEntry = threePlusEntries.sort(
+      (a, b) => b.value - a.value,
+    )[0];
+    let keepThreeCards = [];
+
+    if (targetThreeEntry.count === 4) {
+      // 四条：随机丢1张，保留3张（这里取前3张）
+      keepThreeCards = targetThreeEntry.cards.slice(0, 3);
+    } else if (targetThreeEntry.count >= 3) {
+      // 三条：全部保留
+      keepThreeCards = targetThreeEntry.cards;
+    }
+
+    // 剩余牌：排除当前三条的rank，按点数从大到小排序
+    const remainingCards = hand
+      .filter((card) => card.rank !== targetThreeEntry.rank)
+      .sort((a, b) => getRankValue(b.rank) - getRankValue(a.rank));
+
+    // 计算需要保留的剩余牌数量（总手牌数 - 最大可丢弃数 - 核心牌组数量）
+    const maxKeepRemaining =
+      hand.length - maxCardsPerDiscard - keepThreeCards.length;
+    const keepRemaining =
+      maxKeepRemaining > 0 ? remainingCards.slice(0, maxKeepRemaining) : [];
+
+    const keep = [...keepThreeCards, ...keepRemaining];
+    const discard = hand
+      .filter((card) => !keep.includes(card))
+      .slice(0, maxCardsPerDiscard);
+    return { keep, discard };
+  }
+
+  // 步骤3：没有三条/四条，检查是否有两个及以上对牌
+  const pairEntries = rankEntries.filter((item) => item.count >= 2);
+  if (pairEntries.length >= 2) {
+    // 取点数最大的两个对牌，4张全保留
+    const sortedPairs = pairEntries
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 2);
+    const keepPairCards = [...sortedPairs[0].cards, ...sortedPairs[1].cards];
+
+    // 剩余牌按点数从大到小排序，补充保留
+    const remainingCards = hand
+      .filter(
+        (card) =>
+          !keepPairCards.some(
+            (c) => c.rank === card.rank && c.suit === card.suit,
+          ),
+      )
+      .sort((a, b) => getRankValue(b.rank) - getRankValue(a.rank));
+
+    const maxKeepRemaining =
+      hand.length - maxCardsPerDiscard - keepPairCards.length;
+    const keepRemaining =
+      maxKeepRemaining > 0 ? remainingCards.slice(0, maxKeepRemaining) : [];
+
+    const keep = [...keepPairCards, ...keepRemaining];
+    const discard = hand
+      .filter((card) => !keep.includes(card))
+      .slice(0, maxCardsPerDiscard);
+    return { keep, discard };
+  }
+
+  // 步骤4：只有单张/单个对牌，丢数字小的
+  // 按点数从大到小排序，保留前 N 张（N = 总手牌数 - 最大可丢弃数）
+  const sortedByRank = hand.sort(
+    (a, b) => getRankValue(b.rank) - getRankValue(a.rank),
+  );
+  const keepCount = Math.max(hand.length - maxCardsPerDiscard, 0);
+  const keep = sortedByRank.slice(0, keepCount);
+  const discard = sortedByRank.slice(keepCount).slice(0, maxCardsPerDiscard);
+
+  return { keep, discard };
+}
+
+function simHouse() {
+  console.log("%chouse", "color:#f00;font-size:2rem");
+
+  simMany(
+    (d) => {
+      console.log("standard deck (full house simulation)");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsFullHouse,
+    findFullHouse,
+  );
+
+  console.log("%chouse ends", "color:#0f0;font-size:2rem");
 }
 
 runSimulationsBasedOnUrl();
