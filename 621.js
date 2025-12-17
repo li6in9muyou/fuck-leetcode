@@ -124,15 +124,23 @@ function simMany(
   prepareDeckBeforeShuffle,
   isOk,
   howToDiscard,
-  gameConfig = {
-    maxNumDiscards: 3,
-    handSize: 8,
-    maxCardsPerDiscard: 5,
-  },
+  _gameConfig = {},
   simConfig = {
     totalSim: 3e4,
   },
 ) {
+  const gameConfig = Object.assign(
+    {
+      maxNumDiscards: 3,
+      handSize: 8,
+      maxCardsPerDiscard: 5,
+    },
+    _gameConfig,
+  );
+  console.groupCollapsed("simmany");
+  console.log("libq simmany/gameconfig", gameConfig);
+  console.groupEnd();
+
   const deck = prepareDeckBeforeShuffle([...STANDARD_DECK]);
   const results = Array.from({ length: simConfig.totalSim }).map(() => {
     const shuffled = shuffleDeck(deck);
@@ -495,7 +503,9 @@ function printDeckBreakdownTable(deck) {
         b[suit][rank];
     }
   }
+  console.groupCollapsed("deck breakdown table");
   console.table(rendered, columnTitles);
+  console.groupEnd();
 }
 
 function runSimulationsBasedOnUrl() {
@@ -576,7 +586,7 @@ function runSimulationForType(type) {
     case "5oak":
     case "house":
     case "2pair":
-      console.log(`Simulation for hand type '${type}' is not yet implemented.`);
+      simTwoPair();
       break;
     default:
       // 已在调用处处理，此处可忽略
@@ -820,3 +830,140 @@ function simThree(runner, discardStrategy) {
 }
 
 runSimulationsBasedOnUrl();
+
+function findHighCard(hand, maxCardsPerDiscard = 5) {
+  const sorted = hand.toSorted((a, b) => b.rank - a.rank);
+  const nKeep = Math.max(1, sorted.length - maxCardsPerDiscard);
+  return {
+    keep: sorted.slice(0, nKeep),
+    discard: sorted.slice(nKeep),
+  };
+}
+function countBy(array, property) {
+  const ans = {};
+  for (const i of array) {
+    if (undefined === ans[i[property]]) {
+      ans[i[property]] = 0;
+    }
+    ans[i[property]] += 1;
+  }
+  return ans;
+}
+function groupBy(array, property) {
+  const ans = {};
+  for (const i of array) {
+    if (undefined === ans[i[property]]) {
+      ans[i[property]] = [];
+    }
+    ans[i[property]].push(i);
+  }
+  return ans;
+}
+function containsTwoPair(hand) {
+  const cnt = countBy(hand, "rank");
+  return Object.values(cnt).filter((c) => c >= 2).length >= 2;
+}
+function findTwoPair(hand, maxCardsPerDiscard = 5) {
+  if (containsTwoPair(hand)) {
+    return { keep: hand, discard: [] };
+  }
+  if (containsPair(hand)) {
+    const g = Object.values(groupBy(hand, "rank"));
+    const pair = g.find((r) => r.length >= 2);
+    const dontNeed = g
+      .filter((r) => r !== pair)
+      .flat()
+      .sort((a, b) => a.rank - b.rank);
+    const dontNeedButKeep = dontNeed.slice(maxCardsPerDiscard);
+    const discard = dontNeed.slice(0, maxCardsPerDiscard);
+    return {
+      keep: [...pair, ...dontNeedButKeep],
+      discard,
+    };
+  } else {
+    return findHighCard(hand, maxCardsPerDiscard);
+  }
+}
+function simTwoPair() {
+  console.log("%c2pair", "color:#f00;font-size:2rem");
+
+  simMany(
+    (d) => {
+      console.log("standard deck, randomly discard");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsTwoPair,
+    randomlyDiscard,
+  );
+  simMany(
+    (d) => {
+      console.log("standard deck, find high card");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsTwoPair,
+    findHighCard,
+  );
+  simMany(
+    (d) => {
+      console.log("standard deck, naive greedy, handsize=6");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsTwoPair,
+    findTwoPair,
+    { handSize: 6 },
+  );
+  simMany(
+    (d) => {
+      console.log("standard deck, naive greedy, handsize=7");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsTwoPair,
+    findTwoPair,
+    { handSize: 7 },
+  );
+  simMany(
+    (d) => {
+      console.log("standard deck, naive greedy, handsize=8");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsTwoPair,
+    findTwoPair,
+  );
+  simMany(
+    (d) => {
+      console.log("standard deck, naive greedy, handsize=9");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsTwoPair,
+    findTwoPair,
+    { handSize: 9 },
+  );
+  simMany(
+    (d) => {
+      console.log("standard deck, naive greedy, handsize=10");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsTwoPair,
+    findTwoPair,
+    { handSize: 10 },
+  );
+  simMany(
+    (d) => {
+      console.log("standard deck, naive greedy, handsize=11");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsTwoPair,
+    findTwoPair,
+    { handSize: 11 },
+  );
+
+  console.log("%c2pair ends", "color:#0f0;font-size:2rem");
+}
