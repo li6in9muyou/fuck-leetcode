@@ -1207,3 +1207,51 @@ function simHouse() {
 }
 
 runSimulationsBasedOnUrl();
+
+// 1. 判断是否满足：至少有3张牌是10或4（花色不限）
+function containsTenFour(hand) {
+  // 筛选出rank为10或4的牌
+  const targetCards = hand.filter(
+    (card) => card.rank === "10" || card.rank === "4",
+  );
+  // 成功条件：目标牌数量 ≥3
+  return targetCards.length >= 3;
+}
+
+// 2. 丢牌策略：留下10/4的牌，其他全部丢掉（遵守maxCardsPerDiscard限制）
+function findTenFour(hand, maxCardsPerDiscard = 5) {
+  // 筛选要保留的牌：10或4
+  const keepCards = hand.filter(
+    (card) => card.rank === "10" || card.rank === "4",
+  );
+  // 筛选要丢弃的牌：非10/4的牌
+  const dontNeed = hand.filter((card) => !keepCards.includes(card));
+
+  // 限制单次最大丢弃数
+  const discard = dontNeed.slice(0, maxCardsPerDiscard);
+  keepCards.push(...dontNeed.slice(maxCardsPerDiscard))
+
+  return {
+    keep: keepCards,
+    discard,
+  };
+}
+
+// 3. 模拟入口：计算摸到至少3张10/4的概率（仅标准牌库+默认参数）
+function simTenFour() {
+  console.log("%c10/4 (≥3张) simulation", "color:#f00;font-size:2rem");
+
+  // 调用simMany执行模拟
+  simMany(
+    (d) => {
+      console.log("standard deck (10/4 ≥3张 simulation)");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsTenFour,
+    findTenFour,
+    // 沿用默认配置：手牌8张、最多丢弃4次、每次丢5张、3万次模拟
+  );
+
+  console.log("%c10/4 simulation ends", "color:#0f0;font-size:2rem");
+}
