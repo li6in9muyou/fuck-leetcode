@@ -1374,3 +1374,135 @@ function simOneOfFour() {
 
   console.log("%cOne of Four simulation ends", "color:#0f0;font-size:2rem");
 }
+
+// 模拟入口：计算「有7且剔除1张7后仍有5张同花」的概率
+function simSevenAndFlush() {
+  console.log(
+    "%cSeven + Flush (exclude 1 seven) simulation",
+    "color:#f00;font-size:2rem",
+  );
+
+  // 案例1：标准牌库（52张，7有4张）
+  simMany(
+    (d) => {
+      console.log("案例1：标准牌库（7有4张）");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsSevenAndFlush,
+    findSevenAndFlush,
+    // 沿用默认配置：手牌8张、最多丢弃4次、每次丢5张、3万次模拟
+  );
+
+  // 案例2：标准牌库 + 新增1张7牌（7的总数变为5张，提升7的出现概率）
+  simMany(
+    (d) => {
+      // 新增1张红桃7（花色不影响，仅提升7的数量）
+      const modifiedDeck = [...d, { rank: "7", suit: "Heart" }];
+      console.log("案例2：标准牌库 + 新增1张7牌（7有5张）");
+      printDeckBreakdownTable(modifiedDeck);
+      return modifiedDeck;
+    },
+    containsSevenAndFlush,
+    findSevenAndFlush,
+  );
+
+  console.log("%cSeven + Flush simulation ends", "color:#0f0;font-size:2rem");
+}
+
+// 工具函数：判断手牌剔除指定牌后是否有至少N张同花色牌
+function hasFlushAfterExcludeCards(hand, excludeCards, n = 5) {
+  // 剔除指定牌后统计花色
+  const filteredHand = hand.filter((card) => !excludeCards.includes(card));
+  if (filteredHand.length < n) return false;
+
+  const suitCount = {};
+  for (const card of filteredHand) {
+    suitCount[card.suit] = (suitCount[card.suit] || 0) + 1;
+  }
+  return Object.values(suitCount).some((count) => count >= n);
+}
+
+// 1. 核心判断函数：containsSevenAndFlush（修正版）
+// 规则：
+// - 手牌至少有1张7；
+// - 剔除任意1张7后，剩余手牌仍能凑出5张同花（即使这张7是同花核心也必须剔除）；
+// - 同花可含其他7，但必须保证「拿走1张7后仍有5张同花」（打出同花后手牌剩7）
+function containsSevenAndFlush(hand) {
+  // 条件1：至少有1张7
+  const sevenCards = hand.filter((card) => card.rank === "7");
+  if (sevenCards.length === 0) return false;
+
+  // 条件2：剔除任意1张7后，剩余手牌仍能凑5张同花（遍历所有7，只要有1种剔除方式满足即可）
+  for (const sevenToExclude of sevenCards) {
+    const hasFlush = hasFlushAfterExcludeCards(hand, [sevenToExclude], 5);
+    if (hasFlush) return true;
+  }
+
+  // 所有7剔除后都凑不出5张同花 → 不满足
+  return false;
+}
+
+// 2. 丢牌策略函数：findSevenAndFlush（修正版）
+// 核心目标：
+// - 优先保留「剔除1张7后仍能凑5张同花」的牌组；
+// - 保证keep中至少有1张7；
+// - 严格遵守：keep.length + discard.length = 手牌总数；
+// - discard.length ≤ maxCardsPerDiscard
+function findSevenAndFlush(hand, maxCardsPerDiscard = 5) {
+  // 步骤1：分离所有7牌和非7牌
+  const sevenCards = hand.filter((card) => card.rank === "7");
+  const nonSevenCards = hand.filter((card) => card.rank !== "7");
+
+  // 步骤2：找到「剔除后能凑同花」的最优7（优先保留这张7，其余7可参与同花）
+  let targetSevenToKeep = sevenCards[0]; // 默认保留第一张7
+  for (const seven of sevenCards) {
+    if (hasFlushAfterExcludeCards(hand, [seven], 5)) {
+      targetSevenToKeep = seven;
+      break; // 找到第一个满足条件的7即可
+    }
+  }
+
+  // 步骤3：筛选「剔除targetSevenToKeep后，能凑5张同花的最优花色」
+  const handWithoutTargetSeven = hand.filter(
+    (card) => card !== targetSevenToKeep,
+  );
+  let bestFlushSuit = "";
+  let maxSuitCount = 0;
+  const suitCount = {};
+  for (const card of handWithoutTargetSeven) {
+    suitCount[card.suit] = (suitCount[card.suit] || 0) + 1;
+    if (suitCount[card.suit] > maxSuitCount) {
+      maxSuitCount = suitCount[card.suit];
+      bestFlushSuit = card.suit;
+    }
+  }
+
+  // 步骤4：构建保留/丢弃列表（核心：保留targetSevenToKeep + 最优同花牌 + 丢不完的牌）
+  // 必须保留的牌：目标7 + 最优同花的所有牌（剔除目标7后的同花牌）
+  const mustKeep = [
+    targetSevenToKeep,
+    ...handWithoutTargetSeven
+      .filter((card) => card.suit === bestFlushSuit)
+      .slice(0, 5),
+  ].filter(Boolean);
+
+  // 待丢弃的牌：非最优同花的牌（优先丢这些）
+  const discardCandidates = hand.filter(
+    (card) => !mustKeep.includes(card) && card !== targetSevenToKeep,
+  );
+
+  // 步骤5：控制丢弃上限，保证总数守恒
+  const actualDiscard = discardCandidates.slice(0, maxCardsPerDiscard);
+  const keepUnDiscardable = discardCandidates.slice(maxCardsPerDiscard); // 丢不完的补回
+
+  // 最终保留列表：必须保留的牌 + 丢不完的牌（去重）
+  const keep = [...new Set([...mustKeep, ...keepUnDiscardable])];
+  // 最终丢弃列表：确保总数守恒（反向过滤）
+  const discard = hand.filter((card) => !keep.includes(card));
+
+  return {
+    keep: keep,
+    discard: discard,
+  };
+}
