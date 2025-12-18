@@ -237,13 +237,33 @@ function findThreeOak(hand, maxCardsPerDiscard) {
   const dist = getRankDistribution(hand);
 
   if (containsPair(hand)) {
-    let rankOfPair;
-    for (const rank in dist) {
-      if (dist[rank] === 2) {
-        rankOfPair = rank;
-        break;
-      }
-    }
+    // 步骤1：找出所有对子（rank出现次数≥2），并按rank大小排序（大的在前）
+    const pairRanks = Object.entries(dist)
+      .filter(([_, count]) => count >= 2)
+      .map(([rank]) => rank)
+      .sort((a, b) => {
+        // 定义rank数值映射（A=14 > K=13 > Q=12 > J=11 > 10=10 > 9=9...2=2）
+        const rankValue = {
+          A: 14,
+          K: 13,
+          Q: 12,
+          J: 11,
+          10: 10,
+          9: 9,
+          8: 8,
+          7: 7,
+          6: 6,
+          5: 5,
+          4: 4,
+          3: 3,
+          2: 2,
+        };
+        return rankValue[b] - rankValue[a]; // 降序排列，大rank在前
+      });
+
+    // 步骤2：选点数最大的对子
+    const rankOfPair = pairRanks[0];
+
     const [y, n] = partition(hand, (c) => c.rank === rankOfPair);
     const nMinKeep = Math.max(2, hand.length - maxCardsPerDiscard);
     const partitioned = [...y, ...n];
@@ -1229,7 +1249,7 @@ function findTenFour(hand, maxCardsPerDiscard = 5) {
 
   // 限制单次最大丢弃数
   const discard = dontNeed.slice(0, maxCardsPerDiscard);
-  keepCards.push(...dontNeed.slice(maxCardsPerDiscard))
+  keepCards.push(...dontNeed.slice(maxCardsPerDiscard));
 
   return {
     keep: keepCards,
