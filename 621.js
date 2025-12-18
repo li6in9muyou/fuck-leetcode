@@ -1320,3 +1320,57 @@ function simTenFour() {
 
   console.log("%c10/4 simulation ends", "color:#0f0;font-size:2rem");
 }
+
+// 1. 判断是否满足条件：手牌中至少有1张7（花色不限）
+function containsOneOfFour(hand) {
+  // 筛选出手牌中rank为7的牌，只要有1张即成功
+  return hand.some((card) => card.rank === "7");
+}
+
+// 2. 丢牌策略：保留7牌，丢弃所有非7牌（遵守maxCardsPerDiscard限制）
+function findOneOfFour(hand, maxCardsPerDiscard = 5) {
+  // 保留所有7牌
+  const keepCards = hand.filter((card) => card.rank === "7");
+  // 筛选要丢弃的非7牌
+  const dontNeed = hand.filter((card) => !keepCards.includes(card));
+
+  // 限制单次最大丢弃数
+  const discardCards = dontNeed.slice(0, maxCardsPerDiscard);
+  keepCards.push(...dontNeed.slice(maxCardsPerDiscard));
+
+  return {
+    keep: keepCards,
+    discard: discardCards,
+  };
+}
+
+// 3. 模拟入口：计算摸到至少1张7的概率（标准牌堆 + 新增1张7牌两个案例）
+function simOneOfFour() {
+  console.log("%cOne of Four (7) simulation", "color:#f00;font-size:2rem");
+
+  // 案例1：标准牌库（默认52张，7有4张）
+  simMany(
+    (d) => {
+      console.log("案例1：标准牌库（7有4张）");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsOneOfFour,
+    findOneOfFour,
+  );
+
+  // 案例2：标准牌库 + 新增1张7牌（7的总数变为5张）
+  simMany(
+    (d) => {
+      // 新增1张红桃7
+      const modifiedDeck = [...d, { rank: "7", suit: "Heart" }];
+      console.log("案例2：标准牌库 + 新增1张7牌（7有5张）");
+      printDeckBreakdownTable(modifiedDeck);
+      return modifiedDeck;
+    },
+    containsOneOfFour,
+    findOneOfFour,
+  );
+
+  console.log("%cOne of Four simulation ends", "color:#0f0;font-size:2rem");
+}
