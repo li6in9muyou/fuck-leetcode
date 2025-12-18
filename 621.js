@@ -106,7 +106,11 @@ function simulateOne(deck, isOk, howToDiscard, gameConfig) {
       break;
     }
 
-    const { keep, discard } = howToDiscard(hand, gameConfig.maxCardsPerDiscard);
+    const { keep, discard } = howToDiscard(
+      hand,
+      gameConfig.maxCardsPerDiscard,
+      d,
+    );
 
     const drawCount = discard.length;
     const redrawCards = d.slice(0, drawCount);
@@ -229,7 +233,40 @@ function partition(array, predict) {
 function containsThreeOak(cards) {
   return Object.values(getRankDistribution(cards)).some((c) => c >= 3);
 }
-function findThreeOak(hand, maxCardsPerDiscard) {
+// 新增工具函数：统计牌堆中指定rank的牌数量（遍历实现，不使用getRankDistribution）
+function countRankInDeck(deck, targetRank) {
+  let count = 0;
+  // 遍历牌堆，统计目标rank的牌数
+  for (let i = 0; i < deck.length; i++) {
+    if (deck[i].rank === targetRank) {
+      count++;
+    }
+  }
+  return count;
+}
+
+// 新增工具函数：获取rank的数值（用于大小比较）
+function getRankValue(rank) {
+  const rankMap = {
+    A: 14,
+    K: 13,
+    Q: 12,
+    J: 11,
+    10: 10,
+    9: 9,
+    8: 8,
+    7: 7,
+    6: 6,
+    5: 5,
+    4: 4,
+    3: 3,
+    2: 2,
+  };
+  return rankMap[rank] || 0;
+}
+
+// 优化后的findThreeOak函数（新增第三个参数deck：剩余牌堆）
+function findThreeOak(hand, maxCardsPerDiscard, deck) {
   if (containsThreeOak(hand)) {
     return { keep: hand, discard: [] };
   }
@@ -237,34 +274,42 @@ function findThreeOak(hand, maxCardsPerDiscard) {
   const dist = getRankDistribution(hand);
 
   if (containsPair(hand)) {
-    // 步骤1：找出所有对子（rank出现次数≥2），并按rank大小排序（大的在前）
-    const pairRanks = Object.entries(dist)
-      .filter(([_, count]) => count >= 2)
-      .map(([rank]) => rank)
-      .sort((a, b) => {
-        // 定义rank数值映射（A=14 > K=13 > Q=12 > J=11 > 10=10 > 9=9...2=2）
-        const rankValue = {
-          A: 14,
-          K: 13,
-          Q: 12,
-          J: 11,
-          10: 10,
-          9: 9,
-          8: 8,
-          7: 7,
-          6: 6,
-          5: 5,
-          4: 4,
-          3: 3,
-          2: 2,
-        };
-        return rankValue[b] - rankValue[a]; // 降序排列，大rank在前
-      });
+    // 步骤1：找出所有对子（rank出现次数≥2）
+    const pairEntries = Object.entries(dist).filter(
+      ([rank, count]) => count >= 2,
+    );
+    // 步骤2：按rank大小降序排序（大rank在前）
+    const sortedPairEntries = pairEntries.sort((a, b) => {
+      const rankA = a[0];
+      const rankB = b[0];
+      return getRankValue(rankB) - getRankValue(rankA);
+    });
 
-    // 步骤2：选点数最大的对子
-    const rankOfPair = pairRanks[0];
+    // 步骤3：遍历排序后的对子，选择“牌堆剩余数量充足”的最优对子
+    let selectedRank = sortedPairEntries[0][0]; // 默认选最大的对子
+    let currentPairCount = dist[selectedRank]; // 当前选中对子的数量
+    let selectedDeckCount = countRankInDeck(deck, selectedRank); // 牌堆中该rank的剩余数量
 
-    const [y, n] = partition(hand, (c) => c.rank === rankOfPair);
+    // 检查是否有更优的对子（大rank但牌堆数量不足时，降级选择）
+    for (let i = 1; i < sortedPairEntries.length; i++) {
+      const candidateRank = sortedPairEntries[i][0];
+      const candidatePairCount = dist[candidateRank];
+      const candidateDeckCount = countRankInDeck(deck, candidateRank);
+
+      // 核心规则：如果候选对子的牌堆剩余数量 ≥ 当前对子数量，且比原选中的更优（或原选中的不足）
+      if (
+        selectedDeckCount < currentPairCount &&
+        candidateDeckCount >= candidatePairCount
+      ) {
+        selectedRank = candidateRank;
+        currentPairCount = candidatePairCount;
+        selectedDeckCount = candidateDeckCount;
+        break; // 找到第一个符合条件的即可，因为是按rank降序排的
+      }
+    }
+
+    // 步骤4：按选中的最优对子执行保留/丢弃逻辑
+    const [y, n] = partition(hand, (c) => c.rank === selectedRank);
     const nMinKeep = Math.max(2, hand.length - maxCardsPerDiscard);
     const partitioned = [...y, ...n];
     return {
