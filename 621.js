@@ -1394,12 +1394,45 @@ function simSevenAndFlush() {
     // 沿用默认配置：手牌8张、最多丢弃4次、每次丢5张、3万次模拟
   );
 
+  // 案例3：手牌+1
+  simMany(
+    (d) => {
+      console.log("案例3：手牌+1");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsSevenAndFlush,
+    findSevenAndFlush,
+    { handSize: 9 },
+    // 沿用默认配置：手牌8张、最多丢弃4次、每次丢5张、3万次模拟
+  );
+
   // 案例2：标准牌库 + 新增1张7牌（7的总数变为5张，提升7的出现概率）
   simMany(
     (d) => {
       // 新增1张红桃7（花色不影响，仅提升7的数量）
       const modifiedDeck = [...d, { rank: "7", suit: "Heart" }];
-      console.log("案例2：标准牌库 + 新增1张7牌（7有5张）");
+      console.log("案例2：标准牌库 + 新增1张7牌");
+      printDeckBreakdownTable(modifiedDeck);
+      return modifiedDeck;
+    },
+    containsSevenAndFlush,
+    findSevenAndFlush,
+  );
+
+  // 案例4：标准牌库 + 新增N张7牌
+  simMany(
+    (d) => {
+      const modifiedDeck = [
+        ...d,
+        { rank: "7", suit: "Heart" },
+        { rank: "7", suit: "Club" },
+        { rank: "7", suit: "Spade" },
+        { rank: "7", suit: "Diamond" },
+      ];
+      console.log(
+        `案例4：标准牌库 + 新增${modifiedDeck.length - d.length}张不同花的7牌`,
+      );
       printDeckBreakdownTable(modifiedDeck);
       return modifiedDeck;
     },
