@@ -438,6 +438,8 @@ function runSimulationForType(type) {
       simHouse();
       break;
     case "4oak":
+      simFour();
+      break;
     case "5oak":
     default:
       console.log(`Simulation for hand type '${type}' is not yet implemented.`);
@@ -1648,6 +1650,219 @@ function findSpadePair(hand, maxCardsPerDiscard = 5) {
   // 最终保留：所有黑桃牌 + 丢不完的非黑桃牌；丢弃：上限内的非黑桃牌
   return {
     keep: [...spadeCards, ...remainingNonSpade],
+    discard: discardCards,
+  };
+}
+
+// 判断是否满足四条：手牌中存在至少1个点数有≥4张牌（包含五条场景）
+function containsFourOak(hand) {
+  const rankCount = hand.reduce((acc, card) => {
+    acc[card.rank] = (acc[card.rank] || 0) + 1;
+    return acc;
+  }, {});
+  return Object.values(rankCount).some((count) => count >= 4);
+}
+
+// 四条丢牌策略：优先保留点数最多的牌组，遵守丢弃上限+总数守恒
+function findFourOak(hand, maxCardsPerDiscard = 5) {
+  if (containsFourOak(hand)) {
+    return { keep: hand, discard: [] };
+  }
+
+  // 统计每个点数的牌数并按数量降序排序
+  const rankCount = hand.reduce((acc, card) => {
+    acc[card.rank] = (acc[card.rank] || 0) + 1;
+    return acc;
+  }, {});
+  const sortedRanks = Object.entries(rankCount).sort((a, b) => b[1] - a[1]);
+  const bestRank = sortedRanks[0][0];
+  const bestRankCards = hand.filter((card) => card.rank === bestRank);
+
+  // 筛选待丢弃牌并控制数量
+  const nonBestRankCards = hand.filter((card) => card.rank !== bestRank);
+  const discardCount = Math.min(nonBestRankCards.length, maxCardsPerDiscard);
+  const discardCards = nonBestRankCards.slice(0, discardCount);
+  const remainingNonBest = nonBestRankCards.slice(discardCount);
+
+  return {
+    keep: [...bestRankCards, ...remainingNonBest],
+    discard: discardCards,
+  };
+}
+
+// 四条概率模拟入口：包含4个指定案例
+function simFour() {
+  console.log("%cFour of a Kind simulation", "color:#f00;font-size:2rem");
+
+  // 案例1：标准牌库（52张）+ 默认手牌8张
+  simMany(
+    (d) => {
+      console.log("案例1：标准牌库（52张）");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsFourOak,
+    findFourOak,
+  );
+
+  // 案例2：标准牌库 + 手牌9张（需调整gameConfig，此处通过simMany隐式兼容）
+  simMany(
+    (d) => {
+      console.log("案例2：标准牌库 + 手牌9张");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsFourOak,
+    findFourOak,
+    { handSize: 9 },
+  );
+
+  simMany(
+    (d) => {
+      // 步骤1：移除2张8牌
+      let removeCount = 0;
+      const filteredDeck = d.filter((card) => {
+        if (card.rank === "8" && removeCount < 2) {
+          removeCount++;
+          return false;
+        }
+        return true;
+      });
+      // 步骤2：新增2张9牌
+      const modifiedDeck = [
+        ...filteredDeck,
+        { rank: "6", suit: "Spade" },
+        { rank: "6", suit: "Club" },
+      ];
+      console.log("案例3：标准牌库 - 2张8 + 2张6");
+      printDeckBreakdownTable(modifiedDeck);
+      return modifiedDeck;
+    },
+    containsFourOak,
+    findFourOak,
+  );
+
+  // 案例4：标准牌库 - 2345各去掉2张 + 新增8张6牌
+  simMany(
+    (d) => {
+      // 步骤1：2/3/4/5各移除2张
+      const removeCounts = { 2: 0, 3: 0, 4: 0, 5: 0 };
+      const filteredDeck = d.filter((card) => {
+        const rank = card.rank;
+        if (["2", "3", "4", "5"].includes(rank) && removeCounts[rank] < 2) {
+          removeCounts[rank]++;
+          return false;
+        }
+        return true;
+      });
+      // 步骤2：新增8张6牌（不同花色循环）
+      const newSixCards = Array.from({ length: 8 }).map((_, idx) => ({
+        rank: "6",
+        suit: ["Spade", "Club", "Heart", "Diamond"][idx % 4],
+      }));
+      const modifiedDeck = [...filteredDeck, ...newSixCards];
+      console.log("案例4：ouija 手牌-1 手牌全变6");
+      printDeckBreakdownTable(modifiedDeck);
+      return modifiedDeck;
+    },
+    containsFourOak,
+    findFourOak,
+    { handSize: 7 },
+  );
+
+  simMany(
+    (d) => {
+      // 步骤1：2/3/4/5各移除2张
+      const removeCounts = { 2: 0, 3: 0, 4: 0, 5: 0 };
+      const filteredDeck = d.filter((card) => {
+        const rank = card.rank;
+        if (["2", "3", "4", "5"].includes(rank) && removeCounts[rank] < 2) {
+          removeCounts[rank]++;
+          return false;
+        }
+        return true;
+      });
+      // 步骤2：新增8张6牌（不同花色循环）
+      const newSixCards = Array.from({ length: 8 }).map((_, idx) => ({
+        rank: "6",
+        suit: ["Spade", "Club", "Heart", "Diamond"][idx % 4],
+      }));
+      const modifiedDeck = [...filteredDeck, ...newSixCards];
+      console.log("案例5：ouija 手牌-1 手牌全变6 只找6牌");
+      printDeckBreakdownTable(modifiedDeck);
+      return modifiedDeck;
+    },
+    containsFourOak,
+    findFourSixes,
+    { handSize: 7 },
+  );
+
+  simMany(
+    (d) => {
+      // 步骤1：移除2张8牌
+      let removeCount = 0;
+      const filteredDeck = d.filter((card) => {
+        if (card.rank === "8" && removeCount < 2) {
+          removeCount++;
+          return false;
+        }
+        return true;
+      });
+      // 步骤2：新增2张9牌
+      const modifiedDeck = [
+        ...filteredDeck,
+        { rank: "6", suit: "Spade" },
+        { rank: "6", suit: "Club" },
+      ];
+      console.log("案例6：标准牌库 - 2张8 + 2张6 只找6牌");
+      printDeckBreakdownTable(modifiedDeck);
+      return modifiedDeck;
+    },
+    containsFourOak,
+    findFourSixes,
+  );
+
+  console.log("%cFour of a Kind simulation ends", "color:#0f0;font-size:2rem");
+}
+// 专属6牌四条的丢牌策略：优先保6牌，若有其他三条则保三条，遵守丢弃上限+总数守恒
+function findFourSixes(hand, maxCardsPerDiscard = 5) {
+  // 已满足四条（任意点数），无需丢牌
+  if (containsFourOak(hand)) {
+    return { keep: hand, discard: [] };
+  }
+
+  // 步骤1：统计每个点数的牌数（用于判断是否有其他三条）
+  const rankCount = hand.reduce((acc, card) => {
+    acc[card.rank] = (acc[card.rank] || 0) + 1;
+    return acc;
+  }, {});
+
+  // 步骤2：筛选出非6点数且牌数≥3的三条（排除6本身）
+  const otherThreeOakRank = Object.entries(rankCount).find(
+    ([rank, count]) => rank !== "6" && count >= 3,
+  )?.[0];
+
+  let keepCards = [];
+  // 规则1：有其他数字的三条 → 保留该三条
+  if (otherThreeOakRank) {
+    keepCards = hand.filter((card) => card.rank === otherThreeOakRank);
+  }
+  // 规则2：无其他三条 → 仅保留6牌
+  else {
+    keepCards = hand.filter((card) => card.rank === "6");
+  }
+
+  // 步骤3：筛选待丢弃的牌（非保留牌）
+  const nonKeepCards = hand.filter((card) => !keepCards.includes(card));
+
+  // 步骤4：控制丢弃数量，保证总数守恒
+  const discardCount = Math.min(nonKeepCards.length, maxCardsPerDiscard);
+  const discardCards = nonKeepCards.slice(0, discardCount);
+  const remainingNonKeep = nonKeepCards.slice(discardCount); // 丢不完的补回
+
+  // 最终保留：核心保留牌 + 丢不完的非保留牌
+  return {
+    keep: [...keepCards, ...remainingNonKeep],
     discard: discardCards,
   };
 }
