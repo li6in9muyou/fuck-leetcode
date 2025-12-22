@@ -548,6 +548,18 @@ function simPair() {
     findPair,
   );
 
+  // 模拟黑桃对子概率（标准牌库案例）
+  simMany(
+    (d) => {
+      console.log("模拟：标准牌库 - 黑桃对子概率");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsSpadePair,
+    findSpadePair,
+    // 沿用默认配置：手牌8张、最多丢弃4次、每次丢5张、3万次模拟
+  );
+
   simMany(
     (d) => {
       console.log("standard deck, handsize=9");
@@ -1603,6 +1615,39 @@ function findOneSpecificFlush(hand, maxCardsPerDiscard = 5) {
   // 最终保留：所有梅花牌 + 丢不完的非梅花牌；丢弃：上限内的非梅花牌
   return {
     keep: [...clubCards, ...remainingNonClub],
+    discard: discardCards,
+  };
+}
+// 判断是否满足条件：手牌中有至少2张黑桃（Spade）花色的牌（不限点数，仅黑桃对子算成功）
+function containsSpadePair(hand) {
+  // 统计黑桃花色的牌数量
+  const spadeCount = hand.reduce((count, card) => {
+    return card.suit === "Spade" ? count + 1 : count;
+  }, 0);
+  // 成功条件：黑桃数量 ≥2
+  return spadeCount >= 2;
+}
+
+// 丢牌策略：保留所有黑桃牌，非黑桃牌优先丢弃，遵守丢弃上限+总数守恒
+function findSpadePair(hand, maxCardsPerDiscard = 5) {
+  // 已满足黑桃对子，无需丢牌
+  if (containsSpadePair(hand)) {
+    return { keep: hand, discard: [] };
+  }
+
+  // 分离黑桃牌（目标保留）和非黑桃牌（待丢弃候选）
+  const spadeCards = hand.filter((card) => card.suit === "Spade");
+  const nonSpadeCards = hand.filter((card) => card.suit !== "Spade");
+
+  // 控制丢弃数量（不超过maxCardsPerDiscard）
+  const discardCount = Math.min(nonSpadeCards.length, maxCardsPerDiscard);
+  const discardCards = nonSpadeCards.slice(0, discardCount);
+  // 丢不完的非黑桃牌补回保留列表（总数守恒）
+  const remainingNonSpade = nonSpadeCards.slice(discardCount);
+
+  // 最终保留：所有黑桃牌 + 丢不完的非黑桃牌；丢弃：上限内的非黑桃牌
+  return {
+    keep: [...spadeCards, ...remainingNonSpade],
     discard: discardCards,
   };
 }
