@@ -522,6 +522,16 @@ function simFlush() {
     randomlyDiscard,
   );
 
+  simMany(
+    (d) => {
+      console.log("standard, only club flush");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsOneSpecificFlush,
+    findOneSpecificFlush,
+  );
+
   console.log("%cflush ends", "color:#0f0;font-size:2rem");
 }
 
@@ -536,6 +546,17 @@ function simPair() {
     },
     containsPair,
     findPair,
+  );
+
+  simMany(
+    (d) => {
+      console.log("standard deck, handsize=9");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsPair,
+    findPair,
+    { handSize: 9 },
   );
 
   simMany(
@@ -613,6 +634,17 @@ function simThree() {
     },
     containsThreeOak,
     findThreeOak,
+  );
+
+  simMany(
+    (d) => {
+      console.log("standard deck, handsize=9");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsThreeOak,
+    findThreeOak,
+    { handSize: 9 },
   );
 
   simMany(
@@ -1537,5 +1569,40 @@ function findSevenAndFlush(hand, maxCardsPerDiscard = 5) {
   return {
     keep: keep,
     discard: discard,
+  };
+}
+
+// 1. 判断是否满足条件：手牌中梅花（Club）花色的牌数≥5张（仅梅花同花算成功）
+function containsOneSpecificFlush(hand, flushRequirement = 5) {
+  // 仅统计梅花（Club）花色的牌数
+  const clubCount = hand.reduce((count, card) => {
+    return card.suit === "Club" ? count + 1 : count;
+  }, 0);
+
+  // 梅花数量≥要求的同花张数（默认5张）则成功
+  return clubCount >= flushRequirement;
+}
+
+// 2. 丢牌策略：仅保留梅花牌，非梅花牌优先丢弃，严格遵守丢弃上限+总数守恒
+function findOneSpecificFlush(hand, maxCardsPerDiscard = 5) {
+  // 若已满足梅花同花，无需丢牌
+  if (containsOneSpecificFlush(hand)) {
+    return { keep: hand, discard: [] };
+  }
+
+  // 步骤1：分离梅花牌（目标保留）和非梅花牌（待丢弃候选）
+  const clubCards = hand.filter((card) => card.suit === "Club");
+  const nonClubCards = hand.filter((card) => card.suit !== "Club");
+
+  // 步骤2：控制丢弃数量（不超过maxCardsPerDiscard）
+  const discardCount = Math.min(nonClubCards.length, maxCardsPerDiscard);
+  const discardCards = nonClubCards.slice(0, discardCount);
+  // 丢不完的非梅花牌，补回保留列表（保证总数守恒）
+  const remainingNonClub = nonClubCards.slice(discardCount);
+
+  // 最终保留：所有梅花牌 + 丢不完的非梅花牌；丢弃：上限内的非梅花牌
+  return {
+    keep: [...clubCards, ...remainingNonClub],
+    discard: discardCards,
   };
 }
