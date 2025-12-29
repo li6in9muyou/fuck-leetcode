@@ -550,6 +550,28 @@ function simPair() {
     findPair,
   );
 
+  simMany(
+    (d) => {
+      console.log("standard deck, handsize=7");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsPair,
+    findPair,
+    { handSize: 7 },
+  );
+
+  simMany(
+    (d) => {
+      console.log("standard deck, handsize=9");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsPair,
+    findPair,
+    { handSize: 9 },
+  );
+
   // 模拟黑桃对子概率（标准牌库案例）
   simMany(
     (d) => {
@@ -1865,4 +1887,78 @@ function findFourSixes(hand, maxCardsPerDiscard = 5) {
     keep: [...keepCards, ...remainingNonKeep],
     discard: discardCards,
   };
+}
+
+// 判断是否满足四花色（FlowerPot）：手牌中包含全部4种花色，每种花色至少1张
+function containsFlowerPot(hand) {
+  // 提取手牌中所有不同花色并去重
+  const existSuits = new Set(hand.map((card) => card.suit));
+  // 成功条件：去重后花色数量 === 4（黑桃/红桃/梅花/方块各至少1张）
+  return existSuits.size === 4;
+}
+
+// 四花色丢牌策略：每个花色至少保留1张，剩余牌优先丢弃，遵守丢弃上限+总数守恒
+function findFlowerPot(hand, maxCardsPerDiscard = 5) {
+  // 已满足四花色，无需丢牌
+  if (containsFlowerPot(hand)) {
+    return { keep: hand, discard: [] };
+  }
+
+  // 步骤1：按花色分组，归集每种花色的所有牌
+  const suitGroups = hand.reduce((acc, card) => {
+    if (!acc[card.suit]) acc[card.suit] = [];
+    acc[card.suit].push(card);
+    return acc;
+  }, {});
+
+  // 步骤2：核心策略 - 每个花色至少保留1张（保底保留，保证凑四花色的基础）
+  let keepCards = [];
+  for (const suit in suitGroups) {
+    keepCards.push(suitGroups[suit][0]); // 每种花色取第1张保留
+  }
+
+  // 步骤3：筛选可丢弃牌（所有花色中，除了保底保留1张外，剩余的牌）
+  const discardCandidates = hand.filter((card) => !keepCards.includes(card));
+
+  // 步骤4：控制丢弃上限 + 总数守恒
+  const discardCards = discardCandidates.slice(0, maxCardsPerDiscard);
+  const unDiscardable = discardCandidates.slice(maxCardsPerDiscard); // 丢不完的补回保留列表
+
+  // 最终保留：各花色保底1张 + 丢不完的牌；丢弃：上限内的剩余牌
+  return {
+    keep: [...keepCards, ...unDiscardable],
+    discard: discardCards,
+  };
+}
+
+function simFlowerPot() {
+  console.log(
+    "%cFlowerPot (4花色集齐) simulation",
+    "color:#f00;font-size:2rem",
+  );
+
+  // 案例1：标准牌库
+  simMany(
+    (d) => {
+      console.log("案例1：标准牌库");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsFlowerPot,
+    findFlowerPot,
+  );
+
+  // 案例2：标准牌库 + 手牌9张
+  simMany(
+    (d) => {
+      console.log("案例2：标准牌库 + 手牌9张");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsFlowerPot,
+    findFlowerPot,
+    { handSize: 9 },
+  );
+
+  console.log("%cFlowerPot simulation ends", "color:#0f0;font-size:2rem");
 }
