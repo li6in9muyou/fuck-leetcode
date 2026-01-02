@@ -46,58 +46,67 @@ const ALL_FIVE_STRAIGHTS = [
   ["9", "10", "J", "Q", "K"],
   ["10", "J", "Q", "K", "A"],
 ];
-const SINGLE_GUTSHOT_1_OUT = [
-  // 目标顺子: A, 2, 3, 4, 5 (The Wheel)
-  ["A", "2", "3", "4"], // Out: 5 (端点封死)
-  ["A", "2", "3", "5"], // Out: 4
-  ["A", "2", "4", "5"], // Out: 3
-  ["A", "3", "4", "5"], // Out: 2
-
-  // 目标顺子: 2, 3, 4, 5, 6
-  ["2", "3", "4", "6"], // Out: 5
-  ["2", "3", "5", "6"], // Out: 4
-  ["2", "4", "5", "6"], // Out: 3
-
-  // 目标顺子: 3, 4, 5, 6, 7
-  ["3", "4", "5", "7"], // Out: 6
-  ["3", "4", "6", "7"], // Out: 5
-  ["3", "5", "6", "7"], // Out: 4
-
-  // 目标顺子: 4, 5, 6, 7, 8
-  ["4", "5", "6", "8"], // Out: 7
-  ["4", "5", "7", "8"], // Out: 6
-  ["4", "6", "7", "8"], // Out: 5
-
-  // 目标顺子: 5, 6, 7, 8, 9
-  ["5", "6", "7", "9"], // Out: 8
-  ["5", "6", "8", "9"], // Out: 7
-  ["5", "7", "8", "9"], // Out: 6
-
+const SINGLE_GUTSHOT_1_OUT_BEST_TO_WORST = [
   // 目标顺子: 6, 7, 8, 9, 10
   ["6", "7", "8", "10"], // Out: 9
   ["6", "7", "9", "10"], // Out: 8
   ["6", "8", "9", "10"], // Out: 7
 
-  // 目标顺子: 7, 8, 9, 10, J
-  ["7", "8", "9", "J"], // Out: 10
-  ["7", "8", "10", "J"], // Out: 9
-  ["7", "9", "10", "J"], // Out: 8
+  // off-center by 1
+  // 目标顺子: 7, 8, 9, 10, j
+  ["7", "8", "9", "j"], // out: 10
+  ["7", "8", "10", "j"], // out: 9
+  ["7", "9", "10", "j"], // out: 8
 
-  // 目标顺子: 8, 9, 10, J, Q
-  ["8", "9", "10", "Q"], // Out: J
-  ["8", "9", "J", "Q"], // Out: 10
-  ["8", "10", "J", "Q"], // Out: 9
+  // off-center by -1
+  // 目标顺子: 5, 6, 7, 8, 9
+  ["5", "6", "7", "9"], // out: 8
+  ["5", "6", "8", "9"], // out: 7
+  ["5", "7", "8", "9"], // out: 6
 
-  // 目标顺子: 9, 10, J, Q, K
+  // off-center by 2
+  // 目标顺子: 8, 9, 10, j, q
+  ["8", "9", "10", "q"], // out: j
+  ["8", "9", "j", "q"], // out: 10
+  ["8", "10", "j", "q"], // out: 9
+
+  // off-center by -2
+  // 目标顺子: 4, 5, 6, 7, 8
+  ["4", "5", "6", "8"], // out: 7
+  ["4", "5", "7", "8"], // out: 6
+  ["4", "6", "7", "8"], // out: 5
+
+  // off-center by 3
+  // 目标顺子: 9, 10, j, q, k
   ["9", "10", "J", "K"], // Out: Q
   ["9", "10", "Q", "K"], // Out: J
   ["9", "J", "Q", "K"], // Out: 10
 
+  // off-center by -3
+  // 目标顺子: 3, 4, 5, 6, 7
+  ["3", "4", "5", "7"], // Out: 6
+  ["3", "4", "6", "7"], // Out: 5
+  ["3", "5", "6", "7"], // Out: 4
+
+  // off-center by 4
   // 目标顺子: 10, J, Q, K, A (Broadway)
   ["10", "J", "Q", "A"], // Out: K
   ["10", "J", "K", "A"], // Out: Q
   ["10", "Q", "K", "A"], // Out: J
   ["J", "Q", "K", "A"], // Out: 10 (端点封死)
+
+  // off-center by -4
+  // 目标顺子: 2, 3, 4, 5, 6
+  ["2", "3", "4", "6"], // Out: 5
+  ["2", "3", "5", "6"], // Out: 4
+  ["2", "4", "5", "6"], // Out: 3
+
+  // off-center by -5
+  // 目标顺子: A, 2, 3, 4, 5 (The Wheel)
+  ["A", "2", "3", "4"], // Out: 5 (端点封死)
+  ["A", "2", "3", "5"], // Out: 4
+  ["A", "2", "4", "5"], // Out: 3
+  ["A", "3", "4", "5"], // Out: 2
 ];
 // 全局打表枚举 - 所有合法3连牌型（全大写蛇形命名）
 const ALL_THREE_RUNS = [
@@ -319,6 +328,8 @@ function simulateOne(deck, isOk, howToDiscard, gameConfig) {
     findHistory,
     cardsSeen: sortHandByRank(cardsSeen),
     cardsAccessible: sortHandByRank(cardsAccessible),
+    isOkAccessible: isOk(cardsAccessible),
+    isOkSeen: isOk(cardsSeen),
   };
 }
 
@@ -2460,14 +2471,18 @@ function findSgPattern(hand, maxCardsPerDiscard = 5) {
   const hitFour = ALL_FOUR_RUNS_2_OUTS.find((run) =>
     run.every((r) => uniqueRanksInHand.has(r)),
   );
+  const hitThree = ALL_FOUR_RUNS_2_OUTS.find((run) =>
+    run.every((r) => uniqueRanksInHand.has(r)),
+  );
   const hitFiveCardTwoOuts = [...SIX_SPAN_2_OUTS, ...SEVEN_SPAN_2_OUTS].find(
     (run) => run.every((r) => uniqueRanksInHand.has(r)),
   );
-  const hitSingleGutShot = SINGLE_GUTSHOT_1_OUT.find((run) =>
+  const hitSingleGutShot = SINGLE_GUTSHOT_1_OUT_BEST_TO_WORST.find((run) =>
     run.every((r) => uniqueRanksInHand.has(r)),
   );
 
-  const targetRun = hitFour ?? hitFiveCardTwoOuts ?? hitSingleGutShot;
+  const targetRun =
+    hitFour ?? hitThree ?? hitFiveCardTwoOuts ?? hitSingleGutShot;
   const keepCards = [];
   const dontNeed = [];
 
