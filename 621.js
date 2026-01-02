@@ -361,6 +361,7 @@ function simMany(
   });
   console.groupCollapsed("libq simmany/results");
   console.log(results);
+  printMetrics(results);
   console.groupEnd();
 
   const stats = results.reduce((groupby, row) => {
@@ -2613,4 +2614,106 @@ function findDensestCards(unique, windowSize) {
 
 function ranks(text) {
   return text.split("").map((r) => ({ rank: r }));
+}
+
+/**
+ * 通用找牌算法效能分析
+ * @param {Array} results - 模拟结果数组
+ */
+function printMetrics(results) {
+  if (!results || results.length === 0) return;
+
+  // 统计核心漏斗数据
+  const metrics = results.reduce(
+    (acc, r) => {
+      // 1. 理论上限：如果把能接触到的牌全给算法，能不能成
+      const accOK = r.isOkAccessible;
+      // 2. 实际接触：在算法换牌过程中，曾经出现在手里的总牌集能不能成
+      const seenOK = r.isOkSeen;
+      // 3. 最终结果：最后确定的 5 张牌是不是目标手型
+      const success = r.success;
+
+      if (accOK) acc.accessibleCount++;
+      if (seenOK) acc.seenCount++;
+      if (seenOK && success) acc.successCount++;
+      if (!seenOK && !success) acc.successCount++;
+
+      // 错误分类统计
+      // A. 决策失误：算法看过了能成牌的组合，但最后留牌没留对
+      if (seenOK && !success) acc.decisionError++;
+
+      // B. 路径失误：理论上能成，但算法早期的 discard 导致最后没摸到关键牌
+      if (accOK && !seenOK) acc.pathError++;
+
+      // C. 绝对不可行
+      if (!accOK) acc.absoluteImpossible++;
+
+      return acc;
+    },
+    {
+      accessibleCount: 0,
+      seenCount: 0,
+      successCount: 0,
+      decisionError: 0,
+      pathError: 0,
+      absoluteImpossible: 0,
+    },
+  );
+
+  const total = results.length;
+
+  // 构造展示表格
+  const tableData = {
+    "1. 理论极限 (isOkAccessible)": {
+      场次: metrics.accessibleCount,
+      占比: ((metrics.accessibleCount / total) * 100).toFixed(2) + "%",
+      说明: "发牌序列中存在目标手型的最大可能",
+    },
+    "2. 实际接触 (isOkSeen)": {
+      场次: metrics.seenCount,
+      占比: ((metrics.seenCount / total) * 100).toFixed(2) + "%",
+      说明: "换牌过程中算法实际看过的牌",
+    },
+    "3. 最终成功 (Success)": {
+      场次: metrics.successCount,
+      占比: ((metrics.successCount / total) * 100).toFixed(2) + "%",
+      说明: "算法最终交出的成绩单",
+    },
+    "---": {
+      场次: "---",
+      占比: "---",
+      说明: "---",
+    },
+    "💀 一定找不到": {
+      场次: metrics.absoluteImpossible,
+      占比: ((metrics.absoluteImpossible / total) * 100).toFixed(2) + "%",
+      说明: "当前发牌序列下完全无解",
+    },
+    "📉 路径丢失 (Gap 1-2)": {
+      场次: metrics.pathError,
+      占比: ((metrics.pathError / total) * 100).toFixed(2) + "%",
+      说明: "因早期弃牌导致关键牌未进入视线",
+    },
+    "❌ 决策失误 (Gap 2-3)": {
+      场次: metrics.decisionError,
+      占比: ((metrics.decisionError / total) * 100).toFixed(2) + "%",
+      说明: "见过成牌组件但没选对",
+    },
+  };
+
+  console.log(
+    `%c 模拟实验效能分析 (Total: ${total}) `,
+    "background: #222; color: #bada55; font-size: 14px; font-weight: bold;",
+  );
+  console.table(tableData);
+
+  // 辅助分析：决策失误的样本
+  if (metrics.decisionError > 0) {
+    console.log(
+      "%c 决策失误样本 (Seen OK but Success False):",
+      "color: #e91e63; font-weight: bold;",
+    );
+    const sample = results.filter((r) => r.isOkSeen && !r.success);
+    console.log("样本详情：", sample);
+  }
 }
