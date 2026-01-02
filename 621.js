@@ -2537,19 +2537,19 @@ function findStraightC(hand, maxCardsPerDiscard = 5) {
 function findDensestCards(unique, windowSize) {
   // 1. 点数映射表，增加 A1 和 A14
   // 2. 幻化手牌：将 A 替换为 A1 和 A14 放入同一个候选池
-  let expandedHand = [];
+  let ranksDoubleA = [];
   unique.forEach((card) => {
     if (card.rank === "A") {
-      expandedHand.push({ ...card, rank: "A1" });
-      expandedHand.push({ ...card, rank: "A14" });
+      ranksDoubleA.push("A1");
+      ranksDoubleA.push("A14");
     } else {
-      expandedHand.push({ ...card });
+      ranksDoubleA.push(card.rank);
     }
   });
 
   // 3. 排序（按 RANK_MAP 的值）
-  const sortedHand = expandedHand.sort(
-    (a, b) => RANK_MAP_DOUBLE_A[a.rank] - RANK_MAP_DOUBLE_A[b.rank],
+  const sortedHand = ranksDoubleA.sort(
+    (a, b) => RANK_MAP_DOUBLE_A[a] - RANK_MAP_DOUBLE_A[b],
   );
 
   if (sortedHand.length <= windowSize) return unique;
@@ -2561,8 +2561,8 @@ function findDensestCards(unique, windowSize) {
   for (let i = 0; i <= sortedHand.length - windowSize; i++) {
     const segment = sortedHand.slice(i, i + windowSize);
     const span =
-      RANK_MAP_DOUBLE_A[segment[segment.length - 1].rank] -
-      RANK_MAP_DOUBLE_A[segment[0].rank];
+      RANK_MAP_DOUBLE_A[segment[segment.length - 1]] -
+      RANK_MAP_DOUBLE_A[segment[0]];
 
     if (span < minSpan) {
       minSpan = span;
@@ -2579,11 +2579,11 @@ function findDensestCards(unique, windowSize) {
 
   candidates.forEach((seg) => {
     const avg =
-      seg.reduce((sum, c) => sum + RANK_MAP_DOUBLE_A[c.rank], 0) / windowSize;
+      seg.reduce((sum, c) => sum + RANK_MAP_DOUBLE_A[c], 0) / windowSize;
     let distance = Math.abs(avg - GOLDEN_CENTER);
 
     // 增加微小权重：如果包含 A1 或 A14，优先级略微降低
-    if (seg.some((c) => c.rank === "A1" || c.rank === "A14")) {
+    if (seg.some((c) => c === "A1" || c === "A14")) {
       distance += 0.1;
     }
 
@@ -2595,12 +2595,11 @@ function findDensestCards(unique, windowSize) {
 
   // 6. 还原：将 A1 或 A14 变回 A，并去重（防止一个区间同时包含A1和A14的情况，虽然窗口大时极少发生）
   const result = bestSegment.map((c) => {
-    if (c.rank === "A1" || c.rank === "A14") {
-      return { ...c, rank: "A" };
+    if (c === "A1" || c === "A14") {
+      return "A";
     }
     return c;
   });
 
-  // 最后的去重确保返回的牌是唯一的
-  return Array.from(new Map(result.map((c) => [c.rank + c.suit, c])).values());
+  return result.map((r) => unique.find((c) => c.rank === r));
 }
