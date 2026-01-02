@@ -2386,15 +2386,15 @@ function containsStraight(hand) {
 function simStraight() {
   console.log("%cStraight simulation", "color:#f00;font-size:2rem");
 
-  simMany(
-    (d) => {
-      console.log("案例：标准牌库 留下3连和4连");
-      printDeckBreakdownTable(d);
-      return d;
-    },
-    containsStraight,
-    findStraightA,
-  );
+  // simMany(
+  //   (d) => {
+  //     console.log("案例：标准牌库 留下3连和4连");
+  //     printDeckBreakdownTable(d);
+  //     return d;
+  //   },
+  //   containsStraight,
+  //   findStraightA,
+  // );
 
   simMany(
     (d) => {
