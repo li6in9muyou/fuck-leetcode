@@ -33,6 +33,174 @@ const RANKS = [
   "K",
   "A",
 ];
+// 枚举所有合法顺子牌型（纯点数字面量，完全贴合肉眼判断习惯）
+const ALL_FIVE_STRAIGHTS = [
+  ["A", "2", "3", "4", "5"],
+  ["2", "3", "4", "5", "6"],
+  ["3", "4", "5", "6", "7"],
+  ["4", "5", "6", "7", "8"],
+  ["5", "6", "7", "8", "9"],
+  ["6", "7", "8", "9", "10"],
+  ["7", "8", "9", "10", "J"],
+  ["8", "9", "10", "J", "Q"],
+  ["9", "10", "J", "Q", "K"],
+  ["10", "J", "Q", "K", "A"],
+];
+const SINGLE_GUTSHOT_1_OUT = [
+  // 目标顺子: A, 2, 3, 4, 5 (The Wheel)
+  ["A", "2", "3", "4"], // Out: 5 (端点封死)
+  ["A", "2", "3", "5"], // Out: 4
+  ["A", "2", "4", "5"], // Out: 3
+  ["A", "3", "4", "5"], // Out: 2
+
+  // 目标顺子: 2, 3, 4, 5, 6
+  ["2", "3", "4", "6"], // Out: 5
+  ["2", "3", "5", "6"], // Out: 4
+  ["2", "4", "5", "6"], // Out: 3
+
+  // 目标顺子: 3, 4, 5, 6, 7
+  ["3", "4", "5", "7"], // Out: 6
+  ["3", "4", "6", "7"], // Out: 5
+  ["3", "5", "6", "7"], // Out: 4
+
+  // 目标顺子: 4, 5, 6, 7, 8
+  ["4", "5", "6", "8"], // Out: 7
+  ["4", "5", "7", "8"], // Out: 6
+  ["4", "6", "7", "8"], // Out: 5
+
+  // 目标顺子: 5, 6, 7, 8, 9
+  ["5", "6", "7", "9"], // Out: 8
+  ["5", "6", "8", "9"], // Out: 7
+  ["5", "7", "8", "9"], // Out: 6
+
+  // 目标顺子: 6, 7, 8, 9, 10
+  ["6", "7", "8", "10"], // Out: 9
+  ["6", "7", "9", "10"], // Out: 8
+  ["6", "8", "9", "10"], // Out: 7
+
+  // 目标顺子: 7, 8, 9, 10, J
+  ["7", "8", "9", "J"], // Out: 10
+  ["7", "8", "10", "J"], // Out: 9
+  ["7", "9", "10", "J"], // Out: 8
+
+  // 目标顺子: 8, 9, 10, J, Q
+  ["8", "9", "10", "Q"], // Out: J
+  ["8", "9", "J", "Q"], // Out: 10
+  ["8", "10", "J", "Q"], // Out: 9
+
+  // 目标顺子: 9, 10, J, Q, K
+  ["9", "10", "J", "K"], // Out: Q
+  ["9", "10", "Q", "K"], // Out: J
+  ["9", "J", "Q", "K"], // Out: 10
+
+  // 目标顺子: 10, J, Q, K, A (Broadway)
+  ["10", "J", "Q", "A"], // Out: K
+  ["10", "J", "K", "A"], // Out: Q
+  ["10", "Q", "K", "A"], // Out: J
+  ["J", "Q", "K", "A"], // Out: 10 (端点封死)
+];
+// 全局打表枚举 - 所有合法3连牌型（全大写蛇形命名）
+const ALL_THREE_RUNS = [
+  ["A", "2", "3"],
+  ["2", "3", "4"],
+  ["3", "4", "5"],
+  ["4", "5", "6"],
+  ["5", "6", "7"],
+  ["6", "7", "8"],
+  ["7", "8", "9"],
+  ["8", "9", "10"],
+  ["9", "10", "J"],
+  ["10", "J", "Q"],
+  ["J", "Q", "K"],
+  ["Q", "K", "A"],
+];
+// 全局打表枚举 - 所有合法4连牌型（全大写蛇形命名）
+const ALL_FOUR_RUNS = [
+  ["A", "2", "3", "4"], // Outs: 5
+  ["2", "3", "4", "5"],
+  ["3", "4", "5", "6"],
+  ["4", "5", "6", "7"],
+  ["5", "6", "7", "8"],
+  ["6", "7", "8", "9"],
+  ["7", "8", "9", "10"],
+  ["8", "9", "10", "J"],
+  ["9", "10", "J", "Q"],
+  ["10", "J", "Q", "K"],
+  ["J", "Q", "K", "A"], // Outs: X
+];
+const ALL_FOUR_RUNS_2_OUTS = [
+  // ["A", "2", "3", "4"], // Outs: 5
+  ["2", "3", "4", "5"],
+  ["3", "4", "5", "6"],
+  ["4", "5", "6", "7"],
+  ["5", "6", "7", "8"],
+  ["6", "7", "8", "9"],
+  ["7", "8", "9", "10"],
+  ["8", "9", "10", "J"],
+  ["9", "10", "J", "Q"],
+  ["10", "J", "Q", "K"],
+  // ["J", "Q", "K", "A"], // Outs: X
+];
+const SIX_SPAN_2_OUTS = [
+  ["A", "3", "4", "5", "6"], // Outs: 2, 7
+  ["2", "4", "5", "6", "7"], // Outs: 3, 8
+  ["3", "5", "6", "7", "8"], // Outs: 4, 9
+  ["4", "6", "7", "8", "9"], // Outs: 5, 10
+  ["5", "7", "8", "9", "10"], // Outs: 6, J
+  ["6", "8", "9", "10", "J"], // Outs: 7, Q
+  ["7", "9", "10", "J", "Q"], // Outs: 8, K
+  ["8", "10", "J", "Q", "K"], // Outs: 9, A
+
+  ["2", "3", "4", "5", "7"], // Outs: A, 6
+  ["3", "4", "5", "6", "8"], // Outs: 2, 7
+  ["4", "5", "6", "7", "9"], // Outs: 3, 8
+  ["5", "6", "7", "8", "10"], // Outs: 4, 9
+  ["6", "7", "8", "9", "J"], // Outs: 5, 10
+  ["7", "8", "9", "10", "Q"], // Outs: 6, J
+  ["8", "9", "10", "J", "K"], // Outs: 7, Q
+  ["9", "10", "J", "Q", "A"], // Outs: 8, K
+];
+const SEVEN_SPAN_2_OUTS = [
+  // 格式：[手牌组合], // Outs: 补哪两张成顺
+  ["A", "2", "3", "5", "6"], // Outs: 4 (成A-5), 7 (此条特殊，跨度为6但有两个洞，补4成顺，补7不即时成顺，故不属于标准7-span，剔除)
+
+  // 标准 7-span 序列开始：
+  ["A", "2", "4", "5", "6"], // Outs: 3 (成A-5), 7 (成3-7，注意此条跨度为6但逻辑与双卡顺一致)
+  ["A", "3", "4", "5", "7"], // Outs: 2 (成A-5), 6 (成3-7)
+  ["2", "4", "5", "6", "8"], // Outs: 3 (成2-6), 7 (成4-8)
+  ["3", "5", "6", "7", "9"], // Outs: 4 (成3-7), 8 (成5-9)
+  ["4", "6", "7", "8", "10"], // Outs: 5 (成4-8), 9 (成6-10)
+  ["5", "7", "8", "9", "J"], // Outs: 6 (成5-9), 10 (成7-J)
+  ["6", "8", "9", "10", "Q"], // Outs: 7 (成6-10), J (成8-Q)
+  ["7", "9", "10", "J", "K"], // Outs: 8 (成7-J), Q (成9-K)
+  ["8", "10", "J", "Q", "A"], // Outs: 9 (成8-Q), K (成10-A)
+
+  // 另一种跳跃排列（洞的位置不同，但本质相同）：
+  ["2", "3", "5", "6", "7"], // Outs: 4 (成3-7), A (成A-5)
+  ["3", "4", "6", "7", "8"], // Outs: 5 (成4-8), 2 (成2-6)
+  ["4", "5", "7", "8", "9"], // Outs: 6 (成5-9), 3 (成3-7)
+  ["5", "6", "8", "9", "10"], // Outs: 7 (成6-10), 4 (成4-8)
+  ["6", "7", "9", "10", "J"], // Outs: 8 (成7-J), 5 (成5-9)
+  ["7", "8", "10", "J", "Q"], // Outs: 9 (成8-Q), 6 (成6-J)
+  ["8", "9", "J", "Q", "K"], // Outs: 10 (成9-K), 7 (成7-Q)
+  ["9", "10", "Q", "K", "A"], // Outs: J (成10-A), 8 (成8-Q)
+];
+const RANK_MAP_DOUBLE_A = {
+  A1: 1,
+  2: 2,
+  3: 3,
+  4: 4,
+  5: 5,
+  6: 6,
+  7: 7,
+  8: 8,
+  9: 9,
+  10: 10,
+  J: 11,
+  Q: 12,
+  K: 13,
+  A14: 14,
+};
 
 const createStandardDeck = () =>
   SUITS.flatMap((suit) => RANKS.map((rank) => ({ suit, rank })));
@@ -46,6 +214,30 @@ const shuffleDeck = (array) => {
   }
   return shuffled;
 };
+
+// 固定排序权重：AKQJ1098765432 优先级依次递减
+const RANK_SORT_ORDER = {
+  A: 14,
+  K: 13,
+  Q: 12,
+  J: 11,
+  10: 10,
+  9: 9,
+  8: 8,
+  7: 7,
+  6: 6,
+  5: 5,
+  4: 4,
+  3: 3,
+  2: 2,
+};
+// 手牌排序工具函数：AKQJ1098765432 降序排列，不修改原入参，返回新数组
+function sortHandByRank(hand) {
+  // 浅拷贝原数组，完全不修改入参，基于副本排序后返回
+  return [...hand].sort((cardA, cardB) => {
+    return RANK_SORT_ORDER[cardB.rank] - RANK_SORT_ORDER[cardA.rank];
+  });
+}
 
 const isFlush = (hand, flushRequirement = 5) => {
   const suitCounts = hand.reduce((acc, card) => {
@@ -93,10 +285,19 @@ function simulateOne(deck, isOk, howToDiscard, gameConfig) {
   let hand = deck.slice(0, gameConfig.handSize);
   let d = deck.slice(gameConfig.handSize);
   let numDiscardUsed = 0;
-  const handHistory = [hand];
+  const handHistory = [sortHandByRank(hand)];
+  const findHistory = [];
+  const cardsSeen = [...hand];
+  const cardsAccessible = deck.slice(
+    0,
+    gameConfig.handSize +
+      gameConfig.maxCardsPerDiscard * gameConfig.maxNumDiscards,
+  );
 
+  let nthDiscard = 0;
   while (true) {
     if (isOk(hand)) {
+      findHistory.push(["keep", ...hand, "discard"]);
       break;
     }
     if (numDiscardUsed >= gameConfig.maxNumDiscards) {
@@ -106,11 +307,14 @@ function simulateOne(deck, isOk, howToDiscard, gameConfig) {
       break;
     }
 
+    nthDiscard += 1;
     const { keep, discard } = howToDiscard(
       hand,
       gameConfig.maxCardsPerDiscard,
       d,
+      { first: nthDiscard === 1, deck: d, nthDiscard },
     );
+    findHistory.push(["keep", ...keep, "discard", ...discard]);
 
     const drawCount = discard.length;
     const redrawCards = d.slice(0, drawCount);
@@ -118,10 +322,18 @@ function simulateOne(deck, isOk, howToDiscard, gameConfig) {
     numDiscardUsed++;
 
     hand = [...keep, ...redrawCards];
-    handHistory.push(hand);
+    cardsSeen.push(...redrawCards);
+    handHistory.push(sortHandByRank(hand));
   }
 
-  return { success: isOk(hand), numDiscardUsed, handHistory };
+  return {
+    success: isOk(hand),
+    numDiscardUsed,
+    handHistory,
+    findHistory,
+    cardsSeen: sortHandByRank(cardsSeen),
+    cardsAccessible: sortHandByRank(cardsAccessible),
+  };
 }
 
 function simMany(
@@ -409,6 +621,7 @@ function runSimulationsBasedOnUrl() {
     "5oak",
     "house", // 新增house
     "2pair",
+    "straight",
   ];
 
   handtypesToRun.forEach((type) => {
@@ -439,6 +652,9 @@ function runSimulationForType(type) {
       break;
     case "4oak":
       simFour();
+      break;
+    case "straight":
+      simStraight();
       break;
     case "5oak":
     default:
@@ -548,6 +764,17 @@ function simPair() {
     },
     containsPair,
     findPair,
+  );
+
+  simMany(
+    (d) => {
+      console.log("standard deck, handsize=6");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsPair,
+    findPair,
+    { handSize: 6 },
   );
 
   simMany(
@@ -1897,21 +2124,21 @@ function containsFlowerPot(hand) {
   return existSuits.size === 4;
 }
 
-// 四花色丢牌策略：每个花色至少保留1张，剩余牌优先丢弃，遵守丢弃上限+总数守恒
+// 四花色丢牌���略：��������个���������������色���少保留1张，剩���������牌��先丢弃，遵守丢弃上限+总数守��
 function findFlowerPot(hand, maxCardsPerDiscard = 5) {
-  // 已满足四花色，无需丢牌
+  // 已满足四��������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������������
   if (containsFlowerPot(hand)) {
     return { keep: hand, discard: [] };
   }
 
-  // 步骤1：按花色分组，归集每种花色的所有牌
+  // 步骤1：按花色�������������������������������������������������������������������组，归集每种花色的所有牌
   const suitGroups = hand.reduce((acc, card) => {
     if (!acc[card.suit]) acc[card.suit] = [];
     acc[card.suit].push(card);
     return acc;
   }, {});
 
-  // 步骤2：核心策略 - 每个花色至少保留1张（保底保留，保证凑四花色的基础）
+  // 步骤2��核心策略 - 每个花色至少保留1张（保底���������留，保证������������������色的基���������）
   let keepCards = [];
   for (const suit in suitGroups) {
     keepCards.push(suitGroups[suit][0]); // 每种花色取第1张保留
@@ -1937,7 +2164,7 @@ function simFlowerPot() {
     "color:#f00;font-size:2rem",
   );
 
-  // 案例1：标准牌库
+  // 案�����1：标准牌库
   simMany(
     (d) => {
       console.log("案例1：标准牌库");
@@ -1951,7 +2178,7 @@ function simFlowerPot() {
   // 案例2：标准牌库 + 手牌9张
   simMany(
     (d) => {
-      console.log("案例2：标准牌库 + 手牌9张");
+      console.log("���例2������牌�� + 手����9张");
       printDeckBreakdownTable(d);
       return d;
     },
@@ -1961,4 +2188,433 @@ function simFlowerPot() {
   );
 
   console.log("%cFlowerPot simulation ends", "color:#0f0;font-size:2rem");
+}
+
+function simShootTheMoon() {
+  console.log(
+    "%cShoot The Moon (Q牌��量) simulation",
+    "color:#f00;font-size:2rem",
+  );
+
+  // 4个Q数��目��配��（1/2/3/4������
+  const qTargetConfigs = [
+    { name: "至��1张Q", checkFn: containsOneQ },
+    { name: "���少2张Q", checkFn: containsTwoQ },
+    { name: "至少3张Q", checkFn: containsThreeQ },
+    { name: "���������������������������������少4��Q", checkFn: containsFourQ },
+  ];
+
+  // 4个��������������������������������������������������������堆场���配�����
+  const deckConfigs = [
+    {
+      title: "标��牌�������原��4张Q）",
+      deckHandler: (d) => d,
+    },
+    {
+      title: "���堆���6张Q�����标��+新���2张Q）",
+      deckHandler: (d) => [
+        ...d,
+        { rank: "Q", suit: "Spade" },
+        { rank: "Q", suit: "Club" },
+      ],
+    },
+    {
+      title: "��堆��8张Q（标准+新增4���Q）",
+      deckHandler: (d) => [
+        ...d,
+        { rank: "Q", suit: "Spade" },
+        { rank: "Q", suit: "Club" },
+        { rank: "Q", suit: "Heart" },
+        { rank: "Q", suit: "Diamond" },
+      ],
+    },
+    {
+      title: "牌��含12张Q + J/K全移除",
+      deckHandler: (d) => {
+        const noJKDeck = d.filter((card) => !["J", "K"].includes(card.rank));
+        const extraQs = Array.from({ length: 8 }, (_, i) => ({
+          rank: "Q",
+          suit: ["Spade", "Club", "Heart", "Diamond"][i % 4],
+        }));
+        return [...noJKDeck, ...extraQs];
+      },
+    },
+  ];
+
+  // �����层��历����4��������4������=16���simMany调用
+  deckConfigs.forEach((deckCfg) => {
+    console.log(`\n${deckCfg.title}`);
+    qTargetConfigs.forEach((targetCfg) => {
+      simMany(
+        (originDeck) => {
+          const modifiedDeck = deckCfg.deckHandler(originDeck);
+          console.log(`→ ��拟��标：${targetCfg.name}`);
+          printDeckBreakdownTable(modifiedDeck);
+          return modifiedDeck;
+        },
+        targetCfg.checkFn,
+        findMoreQ,
+      );
+    });
+  });
+
+  console.log("%cShoot The Moon simulation ends", "color:#f00;font-size:2rem");
+}
+
+// 成功条件：手牌中至�����1���Q牌
+function containsOneQ(hand) {
+  const qCount = hand.reduce(
+    (count, card) => (card.rank === "Q" ? count + 1 : count),
+    0,
+  );
+  return qCount >= 1;
+}
+
+// 成功条件：手�������������������������������������中至少有2张Q牌
+function containsTwoQ(hand) {
+  const qCount = hand.reduce(
+    (count, card) => (card.rank === "Q" ? count + 1 : count),
+    0,
+  );
+  return qCount >= 2;
+}
+
+// 成����������������手��������������有3张Q���������������������
+function containsThreeQ(hand) {
+  const qCount = hand.reduce(
+    (count, card) => (card.rank === "Q" ? count + 1 : count),
+    0,
+  );
+  return qCount >= 3;
+}
+
+// ���功条件：手牌中�������������有4��Q�������������
+function containsFourQ(hand) {
+  const qCount = hand.reduce(
+    (count, card) => (card.rank === "Q" ? count + 1 : count),
+    0,
+  );
+  return qCount >= 4;
+}
+
+function findMoreRank(rank, hand, maxCardsPerDiscard = 5) {
+  const qCards = hand.filter((card) => card.rank === rank);
+  const nonQCards = hand.filter((card) => card.rank !== rank);
+
+  const discardCards = nonQCards.slice(0, maxCardsPerDiscard);
+  const remainNonQ = nonQCards.slice(maxCardsPerDiscard);
+
+  return {
+    keep: [...qCards, ...remainNonQ],
+    discard: discardCards,
+  };
+}
+
+function findMoreQ(hand, maxCardsPerDiscard = 5) {
+  const qCards = hand.filter((card) => card.rank === "Q");
+  const nonQCards = hand.filter((card) => card.rank !== "Q");
+
+  // 控制丢弃数量，不超上限
+  const discardCards = nonQCards.slice(0, maxCardsPerDiscard);
+  // 丢不完的非Q牌补回保留列表，保证总数守恒
+  const remainNonQ = nonQCards.slice(maxCardsPerDiscard);
+
+  return {
+    keep: [...qCards, ...remainNonQ],
+    discard: discardCards,
+  };
+}
+
+// 精准生成指定牌数的自定义牌库：入参数组长度13，������A-2����随机分配花色
+function makeRankDeck(rankCounts) {
+  // 仅校���数组长���为13，符合要求
+  if (rankCounts.length !== 13) {
+    throw new Error(
+      "rankCounts数组�������������13，对���������A到2����张牌�����量",
+    );
+  }
+  // �������牌面值顺序：A, K, Q, J, 10, 9, 8, 7, 6, 5, 4, 3, 2��共13个）
+  const ranks = [
+    "A",
+    "K",
+    "Q",
+    "J",
+    "10",
+    "9",
+    "8",
+    "7",
+    "6",
+    "5",
+    "4",
+    "3",
+    "2",
+  ];
+  const suits = ["Spade", "Club", "Heart", "Diamond"]; // 随�����花色池
+  const deck = [];
+
+  ranks.forEach((rank, index) => {
+    const cardNum = rankCounts[index];
+    if (cardNum <= 0) return; // 数量为0/负数则跳过
+    // 按指定数量生成牌，随机赋予花色
+    for (let i = 0; i < cardNum; i++) {
+      const randomSuit = suits[Math.floor(Math.random() * suits.length)];
+      deck.push({ rank, suit: randomSuit });
+    }
+  });
+  return deck;
+}
+
+// 自定义牌堆模拟��条概率入口
+function simAdHoc() {
+  console.log(
+    "%cAdHoc (Custom Deck Four of a Kind) simulation",
+    "color:#f00;font-size:2rem",
+  );
+
+  // 牌数配置：X(10)、1、4、3、5、4、6、5、4、3、0、2、2 → 对应A到2共13个数值
+  const customRankCounts = [10, 1, 4, 3, 5, 4, 6, 5, 4, 3, 0, 2, 2];
+  simMany(
+    () => {
+      const customDeck = makeRankDeck(customRankCounts);
+      console.log("案例：自定义牌堆（A-2数量：10,1,4,3,5,4,6,5,4,3,0,2,2）");
+      printDeckBreakdownTable(customDeck);
+      return customDeck;
+    },
+    containsFourOak,
+    (...args) => findMoreRank("A", ...args),
+  );
+
+  console.log("%cAdHoc simulation ends", "color:#f00;font-size:2rem");
+}
+
+function containsStraight(hand) {
+  // 提取手牌所有点数并去重
+  const handRanks = new Set(hand.map((card) => card.rank));
+  // 校验是否匹配任意一种顺子
+  return ALL_FIVE_STRAIGHTS.some((straight) =>
+    straight.every((rank) => handRanks.has(rank)),
+  );
+}
+
+// 配合已有containsStraight，即可完成顺子全流程模拟
+function simStraight() {
+  console.log("%cStraight simulation", "color:#f00;font-size:2rem");
+
+  simMany(
+    (d) => {
+      console.log("案例：标准牌库 留下3连和4连");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsStraight,
+    findStraightA,
+  );
+
+  simMany(
+    (d) => {
+      console.log("案例：标准牌库 按模式筛选留牌");
+      printDeckBreakdownTable(d);
+      return d;
+    },
+    containsStraight,
+    findStraightB,
+  );
+
+  console.log("%cStraight simulation ends", "color:#f00;font-size:2rem");
+}
+
+function findStraightA(hand, maxCardsPerDiscard = 5) {
+  // 已成型顺子，全留不丢
+  if (containsStraight(hand)) {
+    return { keep: hand, discard: [] };
+  }
+
+  const handRanks = new Set(hand.map((card) => card.rank));
+  const hitFour = ALL_FOUR_RUNS.find((run) =>
+    run.every((r) => handRanks.has(r)),
+  );
+  const hitThree = ALL_THREE_RUNS.find((run) =>
+    run.every((r) => handRanks.has(r)),
+  );
+
+  // 确定目标保留的连牌点数组：4连优先，无则3连
+  const targetRun = hitFour || hitThree;
+  const keepCards = [];
+  const dontNeed = [];
+
+  if (targetRun) {
+    for (const rank of targetRun) {
+      keepCards.push(hand.find((c) => c.rank === rank));
+    }
+    dontNeed.push(...hand.filter((c) => !keepCards.includes(c)));
+  } else {
+    // 无3/4连，全部手牌作为待丢弃牌（随机丢）
+    dontNeed.push(...hand);
+  }
+
+  // ✅ 拆分待丢弃牌：可丢的(≤上限) + 丢不下的(补回保留区)，保证总数完全守恒
+  const discard = dontNeed.slice(0, maxCardsPerDiscard);
+  const dontNeedButKeep = dontNeed.slice(maxCardsPerDiscard);
+
+  // 最终保留 = 必留牌 + 丢不下的牌 | 最终丢弃 = 可丢的牌
+  // ✅ 绝对保证：keep.length + discard.length = 原始手牌.length，无任何牌遗漏
+  return {
+    keep: [...keepCards, ...dontNeedButKeep],
+    discard: discard,
+  };
+}
+
+function findStraightB(hand, maxCardsPerDiscard = 5) {
+  // 已成型顺子，全留不丢
+  if (containsStraight(hand)) {
+    return { keep: hand, discard: [] };
+  }
+
+  const uniqueRanksInHand = new Set(hand.map((card) => card.rank));
+  const hitFour = ALL_FOUR_RUNS_2_OUTS.find((run) =>
+    run.every((r) => uniqueRanksInHand.has(r)),
+  );
+  const hitFiveCardTwoOuts = [...SIX_SPAN_2_OUTS, ...SEVEN_SPAN_2_OUTS].find(
+    (run) => run.every((r) => uniqueRanksInHand.has(r)),
+  );
+  const hitSingleGutShot = SINGLE_GUTSHOT_1_OUT.find((run) =>
+    run.every((r) => uniqueRanksInHand.has(r)),
+  );
+
+  const targetRun = hitFour ?? hitFiveCardTwoOuts ?? hitSingleGutShot;
+  const keepCards = [];
+  const dontNeed = [];
+
+  if (targetRun) {
+    for (const rank of targetRun) {
+      keepCards.push(hand.find((c) => c.rank === rank));
+    }
+    dontNeed.push(...hand.filter((c) => !keepCards.includes(c)));
+  } else {
+    const unique = Array.from(uniqueRanksInHand).map((r) =>
+      hand.find((c) => c.rank === r),
+    );
+    const nCardsKeptForDensity = hand.length - maxCardsPerDiscard;
+    keepCards.push(...findDensestCards(unique, nCardsKeptForDensity));
+    dontNeed.push(...hand.filter((c) => !keepCards.includes(c)));
+  }
+
+  // ✅ 拆分待丢弃牌：可丢的(≤上限) + 丢不下的(补回保留区)，保证总数完全守恒
+  const discard = dontNeed.slice(0, maxCardsPerDiscard);
+  const dontNeedButKeep = dontNeed.slice(maxCardsPerDiscard);
+
+  // 最终保留 = 必留牌 + 丢不下的牌 | 最终丢弃 = 可丢的牌
+  // ✅ 绝对保证：keep.length + discard.length = 原始手牌.length，无任何牌遗漏
+  return {
+    keep: [...keepCards, ...dontNeedButKeep],
+    discard: discard,
+  };
+}
+
+function findStraightC(hand, maxCardsPerDiscard = 5) {
+  // 已成型顺子，全留不丢
+  if (containsStraight(hand)) {
+    return { keep: hand, discard: [] };
+  }
+
+  const handRanks = new Set(hand.map((card) => card.rank));
+  const hitFour = ALL_FOUR_RUNS_2_OUTS.find((run) =>
+    run.every((r) => handRanks.has(r)),
+  );
+
+  const targetRun = hitFour;
+  const keepCards = [];
+  const dontNeed = [];
+
+  if (targetRun) {
+    for (const rank of targetRun) {
+      keepCards.push(hand.find((c) => c.rank === rank));
+    }
+    dontNeed.push(...hand.filter((c) => !keepCards.includes(c)));
+  } else {
+    // 无3/4连，全部手牌作为待丢弃牌（随机丢）
+    dontNeed.push(...hand);
+  }
+
+  // ✅ 拆分待丢弃牌：可丢的(≤上限) + 丢不下的(补回保留区)，保证总数完全守恒
+  const discard = dontNeed.slice(0, maxCardsPerDiscard);
+  const dontNeedButKeep = dontNeed.slice(maxCardsPerDiscard);
+
+  // 最终保留 = 必留牌 + 丢不下的牌 | 最终丢弃 = 可丢的牌
+  // ✅ 绝对保证：keep.length + discard.length = 原始手牌.length，无任何牌遗漏
+  return {
+    keep: [...keepCards, ...dontNeedButKeep],
+    discard: discard,
+  };
+}
+
+function findDensestCards(unique, windowSize) {
+  // 1. 点数映射表，增加 A1 和 A14
+  // 2. 幻化手牌：将 A 替换为 A1 和 A14 放入同一个候选池
+  let expandedHand = [];
+  unique.forEach((card) => {
+    if (card.rank === "A") {
+      expandedHand.push({ ...card, rank: "A1" });
+      expandedHand.push({ ...card, rank: "A14" });
+    } else {
+      expandedHand.push({ ...card });
+    }
+  });
+
+  // 3. 排序（按 RANK_MAP 的值）
+  const sortedHand = expandedHand.sort(
+    (a, b) => RANK_MAP_DOUBLE_A[a.rank] - RANK_MAP_DOUBLE_A[b.rank],
+  );
+
+  if (sortedHand.length <= windowSize) return unique;
+
+  let minSpan = Infinity;
+  let candidates = [];
+
+  // 4. 滑动窗口寻找最密集区间
+  for (let i = 0; i <= sortedHand.length - windowSize; i++) {
+    const segment = sortedHand.slice(i, i + windowSize);
+    const span =
+      RANK_MAP_DOUBLE_A[segment[segment.length - 1].rank] -
+      RANK_MAP_DOUBLE_A[segment[0].rank];
+
+    if (span < minSpan) {
+      minSpan = span;
+      candidates = [segment];
+    } else if (span === minSpan) {
+      candidates.push(segment);
+    }
+  }
+
+  // 5. 从多个最密集区间中，选出最靠近中心（7.5）的
+  const GOLDEN_CENTER = 7.5;
+  let bestSegment = candidates[0];
+  let minDistance = Infinity;
+
+  candidates.forEach((seg) => {
+    const avg =
+      seg.reduce((sum, c) => sum + RANK_MAP_DOUBLE_A[c.rank], 0) / windowSize;
+    let distance = Math.abs(avg - GOLDEN_CENTER);
+
+    // 增加微小权重：如果包含 A1 或 A14，优先级略微降低
+    if (seg.some((c) => c.rank === "A1" || c.rank === "A14")) {
+      distance += 0.1;
+    }
+
+    if (distance < minDistance) {
+      minDistance = distance;
+      bestSegment = seg;
+    }
+  });
+
+  // 6. 还原：将 A1 或 A14 变回 A，并去重（防止一个区间同时包含A1和A14的情况，虽然窗口大时极少发生）
+  const result = bestSegment.map((c) => {
+    if (c.rank === "A1" || c.rank === "A14") {
+      return { ...c, rank: "A" };
+    }
+    return c;
+  });
+
+  // 最后的去重确保返回的牌是唯一的
+  return Array.from(new Map(result.map((c) => [c.rank + c.suit, c])).values());
 }
