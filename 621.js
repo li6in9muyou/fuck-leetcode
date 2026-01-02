@@ -2468,21 +2468,13 @@ function findSgPattern(hand, maxCardsPerDiscard = 5) {
   }
 
   const uniqueRanksInHand = new Set(hand.map((card) => card.rank));
-  const hitFour = ALL_FOUR_RUNS_2_OUTS.find((run) =>
-    run.every((r) => uniqueRanksInHand.has(r)),
-  );
-  const hitThree = ALL_FOUR_RUNS_2_OUTS.find((run) =>
-    run.every((r) => uniqueRanksInHand.has(r)),
-  );
-  const hitFiveCardTwoOuts = [...SIX_SPAN_2_OUTS, ...SEVEN_SPAN_2_OUTS].find(
-    (run) => run.every((r) => uniqueRanksInHand.has(r)),
-  );
-  const hitSingleGutShot = SINGLE_GUTSHOT_1_OUT_BEST_TO_WORST.find((run) =>
-    run.every((r) => uniqueRanksInHand.has(r)),
-  );
-
-  const targetRun =
-    hitFour ?? hitThree ?? hitFiveCardTwoOuts ?? hitSingleGutShot;
+  const targetRun = [
+    ...ALL_FOUR_RUNS_2_OUTS,
+    // ...ALL_THREE_RUNS,
+    ...SIX_SPAN_2_OUTS,
+    ...SEVEN_SPAN_2_OUTS,
+    ...SINGLE_GUTSHOT_1_OUT_BEST_TO_WORST,
+  ].find((run) => run.every((r) => uniqueRanksInHand.has(r)));
   const keepCards = [];
   const dontNeed = [];
 
