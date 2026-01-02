@@ -2403,7 +2403,7 @@ function simStraight() {
       return d;
     },
     containsStraight,
-    findStraightB,
+    findSgPattern,
   );
 
   console.log("%cStraight simulation ends", "color:#f00;font-size:2rem");
@@ -2450,7 +2450,7 @@ function findStraightA(hand, maxCardsPerDiscard = 5) {
   };
 }
 
-function findStraightB(hand, maxCardsPerDiscard = 5) {
+function findSgPattern(hand, maxCardsPerDiscard = 5) {
   // 已成型顺子，全留不丢
   if (containsStraight(hand)) {
     return { keep: hand, discard: [] };
@@ -2602,4 +2602,8 @@ function findDensestCards(unique, windowSize) {
   });
 
   return result.map((r) => unique.find((c) => c.rank === r));
+}
+
+function ranks(text) {
+  return text.split("").map((r) => ({ rank: r }));
 }
