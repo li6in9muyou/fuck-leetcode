@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SICP Stream 惰性流 JS实现 - Console中使用</title>
+    <style>
+      body {
+        font-size: 16px;
+        line-height: 1.8;
+        padding: 20px;
+        font-family: monospace;
+        background: black;
+        color: white;
+      }
+      h1 {
+        font-size: 20px;
+      }
+      h2 {
+        font-size: 18px;
+        margin-top: 30px;
+      }
+      .func {
+        color: #e74c3c;
+        font-weight: bold;
+      }
+      .desc {
+        color: #27ae60;
+      }
+      .demo {
+        color: #9b59b6;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>
+      ✅ SICP 惰性流(Stream) 完整JS实现 - 所有函数已挂载全局，Console直接调用
+    </h1>
+    <h2>核心说明：</h2>
+    <p>
+      1.
+      流(Stream)是「惰性求值」的序列，只有取元素时才计算，计算一次永久缓存，完美贴合SICP定义
+    </p>
+    <p>
+      2. consStream
+      构造的流，car是立即值，cdr是「延迟计算的函数」，取cdr时自动求值+缓存
+    </p>
+    <p>
+      3.
+      所有工具函数都不会一次性计算整个流，均为惰性处理，无限流也不会卡死浏览器
+    </p>
+
+    <h2>一、基础核心构造函数【流的基石】</h2>
+    <p>
+      <span class="func">consStream(carVal, cdrFunc)</span> -
+      构造流，参数1=流的第一个值，参数2=返回「剩余流」的无参函数
+    </p>
+    <p>
+      <span class="func">streamCar(stream)</span> -
+      获取流的第一个元素（立即返回，无计算开销）
+    </p>
+    <p>
+      <span class="func">streamCdr(stream)</span> -
+      获取流的剩余部分（惰性求值，第一次调用计算，之后返回缓存值）
+    </p>
+    <p><span class="func">isStreamEmpty(stream)</span> - 判断流是否为空流</p>
+    <p><span class="func">emptyStream</span> - 常量，代表空流</p>
+
+    <h2>二、流的基础操作函数</h2>
+    <p>
+      <span class="func">streamRef(stream, n)</span> -
+      获取流中第n个元素(下标从0开始)
+      <span class="demo">例：streamRef(integerStream, 5) → 6</span>
+    </p>
+    <p>
+      <span class="func">streamTake(stream, n)</span> -
+      取流的前n个元素，转为普通数组
+      <span class="demo"
+        >例：streamTake(fibStream, 8) → [0,1,1,2,3,5,8,13]</span
+      >
+    </p>
+    <p>
+      <span class="func">streamForEach(stream, callback)</span> -
+      遍历流的元素执行回调，惰性执行
+    </p>
+    <p>
+      <span class="func">streamMap(fn, ...streams)</span> -
+      流的映射，多流联动，惰性求值
+      <span class="demo">例：streamMap(x=>x*2, integerStream)</span>
+    </p>
+    <p>
+      <span class="func">streamFilter(predicate, stream)</span> -
+      流的过滤，满足条件的元素保留，惰性求值
+      <span class="demo">例：streamFilter(isPrime, integerStream)</span>
+    </p>
+
+    <h2>三、流的高阶生成/合并函数</h2>
+    <p>
+      <span class="func">streamEnumerate(start, step=1)</span> -
+      生成从start开始的步长为step的无限数字流
+      <span class="demo">例：streamEnumerate(1) → 正整数流</span>
+    </p>
+    <p>
+      <span class="func">streamZip(stream1, stream2, fn=(a,b)=>[a,b])</span> -
+      两个流拉链合并，fn指定合并规则，惰性
+    </p>
+    <p>
+      <span class="func">streamAdd(s1, s2)</span> -
+      两个数字流的对应元素相加，惰性
+      <span class="demo">例：streamAdd(fibStream, streamCdr(fibStream))</span>
+    </p>
+    <p>
+      <span class="func">streamScale(stream, factor)</span> -
+      流的每个元素乘以指定系数，惰性
+      <span class="demo">例：streamScale(integerStream, 3)</span>
+    </p>
+    <p>
+      <span class="func">streamAppend(s1, s2)</span> -
+      拼接两个流，s1遍历完才会遍历s2，惰性
+    </p>
+
+    <h2>四、经典无限流【直接调用，书中原版】</h2>
+    <p>
+      <span class="func">integerStream</span> -
+      从1开始的无限正整数流：1,2,3,4,5,...
+    </p>
+    <p><span class="func">evenStream</span> - 无限偶数流：2,4,6,8,10,...</p>
+    <p><span class="func">oddStream</span> - 无限奇数流：1,3,5,7,9,...</p>
+    <p>
+      <span class="func">fibStream</span> - 无限斐波那契流：0,1,1,2,3,5,8,13,...
+    </p>
+    <p>
+      <span class="func">primeStream</span> - 无限素数流：2,3,5,7,11,13,17,...
+    </p>
+
+    <h2>五、辅助工具函数</h2>
+    <p><span class="func">isPrime(n)</span> - 判断一个数是否为素数</p>
+    <p>
+      <span class="func">displayStream(stream, n=10)</span> -
+      快捷打印流的前n个元素到控制台
+    </p>
+
+    <script>
+      /************************ 核心实现：SICP 惰性流 Stream 【不要修改】 ************************/
+      // 1. 空流常量
+      const emptyStream = Symbol("empty-stream");
+
+      // 2. 判断是否为空流
+      function isStreamEmpty(stream) {
+        return stream === emptyStream;
+      }
+
+      let streamCreated = 0;
+
+      class Stream {
+        cdrCache = null; // 缓存cdr的计算结果，只算一次
+        cdrEvaluated = false; // 标记是否已经计算过cdr
+        constructor(car, cdrThunk) {
+          streamCreated += 1;
+          this.car = car;
+          this.cdrThunk = cdrThunk;
+        }
+        cdr() {
+          if (!this.cdrEvaluated) {
+            this.cdrCache = this.cdrThunk(); // 惰性求值：调用时才执行
+            this.cdrEvaluated = true; // 标记已求值，永久缓存
+          }
+          return this.cdrCache;
+        }
+      }
+
+      // 3. 构造流：核心！car是立即值，cdr是延迟计算的函数，惰性求值+缓存
+      function consStream(carVal, cdrThunk) {
+        return new Stream(carVal, cdrThunk);
+      }
+
+      // 4. 获取流的第一个元素
+      function streamCar(stream) {
+        if (isStreamEmpty(stream)) throw new Error("空流无法获取car");
+        return stream.car;
+      }
+
+      // 5. 获取流的剩余部分（惰性+缓存）
+      function streamCdr(stream) {
+        if (isStreamEmpty(stream)) throw new Error("空流无法获取cdr");
+        return stream.cdr();
+      }
+
+      // 6. 获取流的第n个元素 (下标从0开始)
+      function streamRef(s, n) {
+        if (n > 999) {
+          throw "streamref only works if n <= 999";
+        }
+        if (n === 0) {
+          return streamCar(s);
+        } else {
+          return streamRef(streamCdr(s), n - 1);
+        }
+      }
+      // function streamRef(s, n) {
+      //   let result = streamCar(s);
+      //   let current = streamCdr(s);
+      //   for (let i = 0; i < n; i++) {
+      //     if (isStreamEmpty(current)) break;
+      //     result = streamCar(current);
+      //     current = streamCdr(current);
+      //   }
+      //   return result;
+      // }
+
+      // 7. 取流的前n个元素，转为普通数组【最常用的函数之一】
+      function streamTake(stream, n) {
+        const result = [];
+        let current = stream;
+        for (let i = 0; i < n; i++) {
+          if (isStreamEmpty(current)) break;
+          result.push(streamCar(current));
+          current = streamCdr(current);
+        }
+        return result;
+      }
+
+      // 8. 流的遍历：对每个元素执行回调，惰性执行
+      function streamForEach(stream, callback) {
+        if (isStreamEmpty(stream)) return;
+        callback(streamCar(stream));
+        streamForEach(streamCdr(stream), callback);
+      }
+
+      // 9. 流的映射：fn作用于流的每个元素，返回新流，惰性求值，支持多流联动
+      function streamMap(fn, ...streams) {
+        if (streams.some(isStreamEmpty)) return emptyStream;
+        const args = streams.map((s) => streamCar(s));
+        return consStream(fn(...args), () =>
+          streamMap(fn, ...streams.map((s) => streamCdr(s))),
+        );
+      }
+
+      // 10. 流的过滤：保留满足predicate的元素，返回新流，惰性求值
+      function streamFilter(predicate, stream) {
+        // 使用迭代（循环）来跳过不符合条件的元素
+        while (!isStreamEmpty(stream)) {
+          const val = streamCar(stream);
+          if (predicate(val)) {
+            // 只有找到符合条件的元素时，才返回 consStream
+            // 剩余部分的过滤依然是惰性的
+            return consStream(val, () =>
+              streamFilter(predicate, streamCdr(stream)),
+            );
+          }
+          // 关键：迭代步进，不产生新的栈帧
+          stream = streamCdr(stream);
+        }
+        return emptyStream;
+      }
+
+      // 11. 生成从start开始，步长为step的无限数字流
+      function streamEnumerate(start = 1, step = 1) {
+        return consStream(start, () => streamEnumerate(start + step, step));
+      }
+
+      // 12. 两个流拉链合并，fn指定合并规则，默认返回 [a,b] 数组
+      function streamZip(s1, s2, fn = (a, b) => [a, b]) {
+        if (isStreamEmpty(s1) || isStreamEmpty(s2)) return emptyStream;
+        return consStream(fn(streamCar(s1), streamCar(s2)), () =>
+          streamZip(streamCdr(s1), streamCdr(s2), fn),
+        );
+      }
+
+      // 13. 两个数字流的对应元素相加
+      function streamAdd(s1, s2) {
+        return streamMap((a, b) => a + b, s1, s2);
+      }
+
+      // 14. 流的每个元素乘以指定系数
+      function streamScale(stream, factor) {
+        return streamMap((x) => x * factor, stream);
+      }
+
+      // 15. 拼接两个流，s1遍历完才会遍历s2
+      function streamAppend(s1, s2) {
+        if (isStreamEmpty(s1)) return s2;
+        return consStream(streamCar(s1), () => streamAppend(streamCdr(s1), s2));
+      }
+
+      // 16. 素数判断辅助函数
+      function isPrime(n) {
+        if (n <= 1) return false;
+        if (n === 2) return true;
+        if (n % 2 === 0) return false;
+        for (let i = 3; i <= Math.sqrt(n); i += 2) {
+          if (n % i === 0) return false;
+        }
+        return true;
+      }
+
+      // 17. 快捷打印流的前n个元素到控制台
+      function displayStream(stream, n = 10) {
+        console.log(`Stream前最多${n}个元素:`, streamTake(stream, n));
+      }
+
+      /************************ 经典无限流：书中原版，直接调用 ************************/
+      // 正整数流：1,2,3,4,5,...
+      const integerStream = streamEnumerate(1);
+
+      // 偶数流：2,4,6,8,10,...
+      const evenStream = streamFilter((x) => x % 2 === 0, integerStream);
+
+      // 奇数流：1,3,5,7,9,...
+      const oddStream = streamFilter((x) => x % 2 !== 0, integerStream);
+
+      // 斐波那契流：0,1,1,2,3,5,8,13,... 【SICP经典写法，完美惰性】
+      const fibStream = consStream(0, () =>
+        consStream(1, () => streamAdd(fibStream, streamCdr(fibStream))),
+      );
+
+      // 素数流：2,3,5,7,11,13,17,... 无限素数
+      const primeStream = streamFilter(isPrime, integerStream);
+
+      console.log(
+        "✅ SICP Stream 初始化完成！所有函数已挂载全局，直接在Console调用即可",
+      );
+      console.log(
+        "💡 入门示例：streamTake(fibStream, 10)  |  streamTake(primeStream, 8)",
+      );
+
+      function partialSum(s) {
+        const ans = consStream(streamCar(s), () =>
+          streamMap((a, b) => a + b, ans, streamCdr(s)),
+        );
+        return ans;
+      }
+
+      const piSummands = (n) =>
+        consStream(1 / n, () => streamMap((x) => -x, piSummands(n + 2)));
+      const piStream = streamScale(partialSum(piSummands(1)), 4);
+      displayStream(piStream, 20);
+
+      const eulerTransform = (s) => {
+        const s0 = streamRef(s, 0); // Sn-1
+        const s1 = streamRef(s, 1); // Sn
+        const s2 = streamRef(s, 2); // Sn+1
+
+        return consStream(s2 - Math.pow(s2 - s1, 2) / (s0 + -2 * s1 + s2), () =>
+          eulerTransform(streamCdr(s)),
+        );
+      };
+
+      displayStream(eulerTransform(piStream), 20);
+
+      function makeTableau(transform, s) {
+        return consStream(s, () => makeTableau(transform, transform(s)));
+      }
+
+      function accStream(trans, ss) {
+        return streamMap(streamCar, makeTableau(trans, ss));
+      }
+
+      displayStream(accStream(eulerTransform, piStream), 20);
+
+      const lnTwoSummands = (n) =>
+        consStream(1 / n, () => streamMap((x) => -x, lnTwoSummands(n + 1)));
+      displayStream(partialSum(lnTwoSummands(1)), 20);
+
+      function streamInterleave(a, b) {
+        if (isStreamEmpty(a)) return b;
+        return consStream(streamCar(a), () =>
+          streamInterleave(b, streamCdr(a)),
+        );
+      }
+      displayStream(oddStream, 10);
+      displayStream(evenStream, 10);
+      displayStream(streamInterleave(oddStream, evenStream), 20);
+
+      function streamHead(s, n = 10) {
+        if (n === 0) {
+          return emptyStream;
+        }
+        return consStream(streamCar(s), () => streamHead(streamCdr(s), n - 1));
+      }
+      displayStream(oddStream, 10);
+      displayStream(streamHead(oddStream, 3), 10);
+      displayStream(streamInterleave(streamHead(oddStream, 3), evenStream), 20);
+
+      function pairs(a, b) {
+        if (isStreamEmpty(a) && isStreamEmpty(b)) return emptyStream;
+        return consStream([streamCar(a), streamCar(b)], () =>
+          streamInterleave(
+            streamMap((x) => [streamCar(a), x], streamCdr(b)),
+            pairs(streamCdr(a), streamCdr(b)),
+          ),
+        );
+      }
+      const five = streamHead(integerStream, 5);
+      displayStream(pairs(five, five), 20);
+
+      function coords(a, b) {
+        if (isStreamEmpty(a) && isStreamEmpty(b)) return emptyStream;
+        return consStream([streamCar(a), streamCar(b)], () =>
+          streamInterleave(
+            streamInterleave(
+              streamMap((x) => [streamCar(a), x], streamCdr(b)),
+              streamMap((x) => [x, streamCar(b)], streamCdr(a)),
+            ),
+            coords(streamCdr(a), streamCdr(b)),
+          ),
+        );
+      }
+      const four = streamHead(integerStream, 4);
+      displayStream(coords(four, four), 20);
+
+      function streamMerge(a, b, weight) {
+        if (isStreamEmpty(a)) return b;
+        if (isStreamEmpty(b)) return a;
+
+        if (weight(streamCar(a)) < weight(streamCar(b))) {
+          return consStream(streamCar(a), () =>
+            streamMerge(streamCdr(a), b, weight),
+          );
+        } else {
+          return consStream(streamCar(b), () =>
+            streamMerge(streamCdr(b), a, weight),
+          );
+        }
+      }
+      const seven = streamHead(integerStream, 7);
+      displayStream(
+        streamMerge(four, seven, (x) => x),
+        20,
+      );
+
+      function pairsWeighted(a, b, weight) {
+        if (isStreamEmpty(a) && isStreamEmpty(b)) return emptyStream;
+
+        return consStream([streamCar(a), streamCar(b)], () => {
+          const descend = pairsWeighted(streamCdr(a), streamCdr(b), weight);
+          const row = streamMap((x) => [streamCar(a), x], streamCdr(b));
+          return streamMerge(descend, row, weight);
+        });
+      }
+      displayStream(pairsWeighted(four, four, ([a, b]) => a + b));
+      displayStream(pairsWeighted(oddStream, evenStream, ([a, b]) => a + b));
+
+      displayStream(triples(integerStream, integerStream, integerStream));
+
+      const three = streamHead(integerStream, 3);
+      displayStream(triples(three, three, three));
+
+      function triples(a, b, c, weight = ([a, b, c = 0]) => a + b + c) {
+        if (isStreamEmpty(a) && isStreamEmpty(b) && isStreamEmpty(c))
+          return emptyStream;
+
+        return consStream([streamCar(a), streamCar(b), streamCar(c)], () => {
+          const descend = triples(
+            streamCdr(a),
+            streamCdr(b),
+            streamCdr(c),
+            weight,
+          );
+          const row = streamMap(
+            ([bb, cc]) => [streamCar(a), bb, cc],
+            pairsWeighted(streamCdr(b), streamCdr(c), weight),
+          );
+          return streamMerge(descend, row, weight);
+        });
+      }
+
+      const tripleInt = triples(integerStream, integerStream, integerStream);
+      displayStream(tripleInt, 999);
+      displayStream(
+        streamFilter(
+          ([a, b, c]) => a * a + b * b === c * c,
+          triples(integerStream, integerStream, integerStream),
+        ),
+        20,
+      );
+    </script>
+  </body>
+</html>

@@ -60,3 +60,9 @@ function scheduler(max) {
 // run(() => sleep(500).then(() => console.log("libq run/done", 12)));
 // run(() => sleep(500).then(() => console.log("libq run/done", 13)));
 // run(() => sleep(500).then(() => console.log("libq run/done", 14)));
+// run(() =>
+//   sleep(100).then(() => {
+//     console.log("libq run/done", 15);
+//     throw 15;
+//   }),
+// ).finally((e) => console.log("libq run/finally", e));
